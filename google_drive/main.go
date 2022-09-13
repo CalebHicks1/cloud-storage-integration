@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gabriel-vasile/mimetype"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
@@ -74,9 +75,12 @@ func saveToken(path string, token *oauth2.Token) {
 
 func main() {
 
-	method := flag.String("t", "ls", "what command we want to perform")
-	folder := flag.String("f", "root", "what folder/directory to look in and list files from")
+	callType := flag.String("t", "list", "the type of API call we want to perform")
+	dir := flag.String("d", "root", "the directory to perform the API call in")
+	filePath := flag.String("f", "", "the file to perform the API call on")
 	flag.Parse()
+
+	fmt.Printf("%+v\n", os.Args)
 
 	ctx := context.Background()
 	b, err := os.ReadFile("credentials.json")
@@ -85,7 +89,7 @@ func main() {
 	}
 
 	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b, drive.DriveMetadataReadonlyScope)
+	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
@@ -97,26 +101,60 @@ func main() {
 	}
 
 	// we want to list files in the given folder
-	if *method == "ls" {
-		files, err := GetAllFiles(srv, *folder)
+	switch *callType {
+	case "list":
+		files, err := GetFilesInFolder(srv, *dir)
 		if err != nil {
-			Exitf("Error getting files from folder %s:\n%s", *folder, err)
+			Exitf("Error getting files from folder %s:\n%s", *dir, err)
 		}
 		// print all file names to STDOUT
 		for _, f := range files {
 			fmt.Println(f.Name)
 		}
+	// help from: https://gist.github.com/tanaikech/19655a8130bac1ba510b29c9c44bbd97
+	case "upload":
+		if *filePath == "" {
+			Exitf("No file given for an 'upload' call\n")
+		}
+
+		// open and stat our file
+		file, err := os.Open(*filePath)
+		if err != nil {
+			Exitf("Problem openeing '%s'\n%s", *filePath, err)
+		}
+		defer file.Close()
+		fileInfo, err := file.Stat()
+		if err != nil {
+			Exitf("Problem statting '%s'\n%s", *filePath, err)
+		}
+
+		// get the MIME type of our file
+		mimetype.SetLimit(0)
+		mType, err := mimetype.DetectFile(*filePath)
+		if err != nil {
+			Exitf("Problem detecting MIME type for '%s'\n%s", *filePath, err)
+		}
+
+		// attempt to upload the file
+		f := &drive.File{Name: fileInfo.Name(), MimeType: mType.String()}
+		res, err := srv.Files.Create(f).Media(file).ProgressUpdater(func(now, size int64) { fmt.Printf("%d, %d\r", now, size) }).Do()
+		if err != nil {
+			Exitf("Problem uploading '%s' to Google Drive\n%s", *filePath, err)
+		}
+		fmt.Printf("File '%s' uploaded (%s)\n", *filePath, res.Id)
+	default:
+		Exitf("Invalid API call type '%s'\n", *callType)
 	}
 }
 
 // https://developers.google.com/drive/api/v2/reference/files/list
-// GetAllFiles fetches and displays all files in the given folder
-func GetAllFiles(d *drive.Service, folder string) ([]*drive.File, error) {
+// GetFilesInFolder fetches and displays all files in the given folder
+func GetFilesInFolder(d *drive.Service, folder string) ([]*drive.File, error) {
 	var fs []*drive.File
 	pageToken := ""
 	for {
 		// prepare a query that only gets file names in the given folder
-		q := d.Files.List().Q(fmt.Sprintf("parents in '%s'", folder)).Fields("files(name)")
+		q := d.Files.List().Q(fmt.Sprintf("parents in '%s'", folder)).Fields("nextPageToken, files(name)")
 
 		// If we have a pageToken set, apply it to the query
 		if pageToken != "" {
@@ -133,6 +171,8 @@ func GetAllFiles(d *drive.Service, folder string) ([]*drive.File, error) {
 		// append the files from the given page that was returned and get the next page token
 		fs = append(fs, r.Files...)
 		pageToken = r.NextPageToken
+
+		// last page has been processed
 		if pageToken == "" {
 			break
 		}
@@ -140,6 +180,7 @@ func GetAllFiles(d *drive.Service, folder string) ([]*drive.File, error) {
 	return fs, nil
 }
 
+// Exitf performs a printf with given params and then exits
 func Exitf(format string, a ...any) {
 	fmt.Printf(format, a...)
 	os.Exit(1)
