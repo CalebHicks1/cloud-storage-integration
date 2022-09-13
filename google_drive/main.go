@@ -75,12 +75,11 @@ func saveToken(path string, token *oauth2.Token) {
 
 func main() {
 
+	// parse command line args
 	callType := flag.String("t", "list", "the type of API call we want to perform")
 	dir := flag.String("d", "root", "the directory to perform the API call in")
 	filePath := flag.String("f", "", "the file to perform the API call on")
 	flag.Parse()
-
-	fmt.Printf("%+v\n", os.Args)
 
 	ctx := context.Background()
 	b, err := os.ReadFile("credentials.json")
@@ -88,7 +87,7 @@ func main() {
 		log.Fatalf("Unable to read client secret file: %v", err)
 	}
 
-	// If modifying these scopes, delete your previously saved token.json.
+	// If modifying these scopes, delete the previously saved token.json file
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
@@ -100,8 +99,8 @@ func main() {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}
 
-	// we want to list files in the given folder
 	switch *callType {
+	// we want to list files in the given folder
 	case "list":
 		files, err := GetFilesInFolder(srv, *dir)
 		if err != nil {
@@ -111,6 +110,7 @@ func main() {
 		for _, f := range files {
 			fmt.Println(f.Name)
 		}
+	// we want to uplaod the given file
 	// help from: https://gist.github.com/tanaikech/19655a8130bac1ba510b29c9c44bbd97
 	case "upload":
 		if *filePath == "" {

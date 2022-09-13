@@ -5,10 +5,13 @@ Client for making Google DRive API calls from the main FUSE backend. Results of 
 You can either compile to an executable via `go build main.go...` or run using `go run main.go...`
 
 #### `-t` : the type of API call we want to perform
-- only `list` is suppoerted now and is default
+- `list` (default) and `upload` are suppoerted now
     
-#### `-f` : the folder ID where we want to perform the API call
-- default is `root`
+#### `-d` : the directory ID where we want to perform the API call
+- default is `root` (no effect for `-t upload` yet)
+
+#### `-f` : the path to the file we want to upload
+- required if using `-t upload`
     
 ## Examples
 
@@ -24,5 +27,5 @@ Lists all files in the root directory of the given Google Drive account
 
 `credentials.json` - Contains the OAuth 2.0 client ID and client secret for the "app"
 
-`token.json` - Delete this and it will be generetaed for the account you want to connect to (default contains the token for quinntestvt@gmail.com - likely expired though)
+`token.json` - Delete this and it will be generetaed for the account you want to connect to and let me know what email to add as a test user (default contains the token for quinntestvt@gmail.com - likely expired though); delete if expired as well
 
