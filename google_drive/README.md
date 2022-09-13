@@ -15,11 +15,11 @@ You can either compile to an executable via `go build main.go...` or run using `
     
 ## Examples
 
-`go run main.go -t list -f 1uh_vYAT8SrEC2pdf6ETww70MgvouBdTo`
+`go run main.go -t list -d 1uh_vYAT8SrEC2pdf6ETww70MgvouBdTo`
 
 This lists all files in the folder with id "1uh_vYAT8SrEC2pdf6ETww70MgvouBdTo"
 
-`go run main.go -t ls`
+`go run main.go -t list`
 
 Lists all files in the root directory of the given Google Drive account
 
