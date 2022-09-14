@@ -113,31 +113,7 @@ func main() {
 	// we want to uplaod the given file
 	// help from: https://gist.github.com/tanaikech/19655a8130bac1ba510b29c9c44bbd97
 	case "upload":
-		if *filePath == "" {
-			Exitf("No file given for an 'upload' call\n")
-		}
-
-		// open and stat our file
-		file, err := os.Open(*filePath)
-		if err != nil {
-			Exitf("Problem openeing '%s'\n%s", *filePath, err)
-		}
-		defer file.Close()
-		fileInfo, err := file.Stat()
-		if err != nil {
-			Exitf("Problem statting '%s'\n%s", *filePath, err)
-		}
-
-		// get the MIME type of our file
-		mimetype.SetLimit(0)
-		mType, err := mimetype.DetectFile(*filePath)
-		if err != nil {
-			Exitf("Problem detecting MIME type for '%s'\n%s", *filePath, err)
-		}
-
-		// attempt to upload the file
-		f := &drive.File{Name: fileInfo.Name(), MimeType: mType.String()}
-		res, err := srv.Files.Create(f).Media(file).ProgressUpdater(func(now, size int64) { fmt.Printf("%d, %d\r", now, size) }).Do()
+		res, err := UploadFile(srv, *filePath, *dir)
 		if err != nil {
 			Exitf("Problem uploading '%s' to Google Drive\n%s", *filePath, err)
 		}
@@ -178,6 +154,34 @@ func GetFilesInFolder(d *drive.Service, folder string) ([]*drive.File, error) {
 		}
 	}
 	return fs, nil
+}
+
+func UploadFile(srv *drive.Service, path, dir string) (*drive.File, error) {
+	if path == "" {
+		return nil, fmt.Errorf("no file given for an 'upload' call")
+	}
+
+	// open and stat our file
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("problem openeing '%s'\n%s", path, err)
+	}
+	defer file.Close()
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("problem statting '%s'\n%s", path, err)
+	}
+
+	// get the MIME type of our file
+	mimetype.SetLimit(0)
+	mType, err := mimetype.DetectFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("problem detecting MIME type for '%s'\n%s", path, err)
+	}
+
+	// attempt to upload the file
+	f := &drive.File{Name: fileInfo.Name(), MimeType: mType.String(), Parents: []string{dir}}
+	return srv.Files.Create(f).Media(file).ProgressUpdater(func(now, size int64) { fmt.Printf("%d, %d\r", now, size) }).Do()
 }
 
 // Exitf performs a printf with given params and then exits

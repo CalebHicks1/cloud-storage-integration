@@ -8,7 +8,7 @@ You can either compile to an executable via `go build main.go...` or run using `
 - `list` (default) and `upload` are suppoerted now
     
 #### `-d` : the directory ID where we want to perform the API call
-- default is `root` (no effect for `-t upload` yet)
+- default is `root`
 
 #### `-f` : the path to the file we want to upload
 - required if using `-t upload`
@@ -22,6 +22,10 @@ This lists all files in the folder with id "1uh_vYAT8SrEC2pdf6ETww70MgvouBdTo"
 `go run main.go -t list`
 
 Lists all files in the root directory of the given Google Drive account
+
+`go run main.go -t upload -f test_file.txt -d 1uh_vYAT8SrEC2pdf6ETww70MgvouBdTo`
+
+Uploads `test_file.txt` to the folder with id "1uh_vYAT8SrEC2pdf6ETww70MgvouBdTo"
 
 ## Credentials
 
