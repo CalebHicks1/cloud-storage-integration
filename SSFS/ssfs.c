@@ -9,6 +9,7 @@
  */
  
 #define FUSE_USE_VERSION 30
+#define LINE_MAX_BUFFER_SIZE 255
 
 #include <fuse.h>
 #include <stdio.h>
@@ -17,6 +18,15 @@
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
+#include <jansson.h>
+
+
+int getFileList(char lines[][LINE_MAX_BUFFER_SIZE]) ;
+int parseJsonString(json_t** fileListAsArray, char stringArray[][LINE_MAX_BUFFER_SIZE], int numberOfLines);
+
+
+json_t* FileList; 
+int SizeOfFileList = 0;
 
 static int do_getattr( const char *path, struct stat *st )
 {
@@ -52,6 +62,15 @@ static int do_getattr( const char *path, struct stat *st )
 	
 	return 0;
 }
+const char* getJsonFileName(json_t* file){
+	if (json_is_string(file) ){
+		return  json_string_value(file);
+	}
+	else{
+		//To-do implement json object (kv pairs) to get file name
+		return json_dumps(file, 0);
+	}
+}
 
 static int do_readdir( const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi )
 {
@@ -62,8 +81,19 @@ static int do_readdir( const char *path, void *buffer, fuse_fill_dir_t filler, o
 	
 	if ( strcmp( path, "/" ) == 0 ) // If the user is trying to show the files/directories of the root directory show the following
 	{
-		filler( buffer, "file54", NULL, 0 );
-		filler( buffer, "file349", NULL, 0 );
+		printf("readd dump %s\n", json_dumps(FileList, 0));
+		for(size_t index = 0; index < (SizeOfFileList*sizeof(json_t)); index+= sizeof(json_t)){
+		
+			const char* fileName = getJsonFileName(json_array_get(FileList, 0));
+			
+			if (fileName != NULL){
+			filler( buffer, fileName, NULL, 0 );
+			}
+			else{
+				printf("NULL");
+			}
+		
+		}
 	}
 	
 	return 0;
@@ -71,7 +101,7 @@ static int do_readdir( const char *path, void *buffer, fuse_fill_dir_t filler, o
 
 static int do_read( const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi )
 {
-	printf( "--> Trying to read %s, %u, %u\n", path, offset, size );
+	printf( "--> Trying to read %s, %lu, %lu\n", path, offset, size );
 	
 	char file54Text[] = "Hello World From File54!";
 	char file349Text[] = "Hello World From File349!";
@@ -96,10 +126,74 @@ static int do_read( const char *path, char *buffer, size_t size, off_t offset, s
 static struct fuse_operations operations = {
     .getattr	= do_getattr,
     .readdir	= do_readdir,
-    .read		= do_read,
+   // .read		= do_read,
 };
 
 int main( int argc, char *argv[] )
 {
+	char execOutput[100][LINE_MAX_BUFFER_SIZE];
+	int a = getFileList(execOutput);
+	json_t* fileListAsArray ;
+
+	if (a < 1){
+		printf("file list getter was not executed properly or output was empty\n");
+		return -1;	
+	 }
+
+   
+	int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
+	
+	if (arraySize < 1){
+		return arraySize;
+	}
+	FileList = json_deep_copy(fileListAsArray);
+	SizeOfFileList = arraySize;
+
 	return fuse_main( argc, argv, &operations, NULL );
+}
+
+
+int parseJsonString(json_t** fileListAsJson, char stringArray[][LINE_MAX_BUFFER_SIZE], int numberOfLines){
+
+	char* fileListAsString = calloc((numberOfLines * LINE_MAX_BUFFER_SIZE) +1, sizeof(char));
+	for( int i = 0; i < numberOfLines; i++){
+		fileListAsString = strncat(fileListAsString, stringArray[i], strlen(stringArray[i]));
+	}
+
+
+	json_error_t* errorCheck = NULL;
+	*fileListAsJson = json_loads(fileListAsString, 0, errorCheck);
+
+	if (errorCheck != NULL){
+		printf("Json encoding error: %s", errorCheck->text);
+		return -1;
+	}
+
+	if ( !json_is_array(*fileListAsJson)){
+		printf("Json was not of type array");
+		return -2;
+	}
+
+
+	return json_array_size(*fileListAsJson);
+
+}
+
+
+int getFileList(char lines[][LINE_MAX_BUFFER_SIZE]) {
+  FILE *fp;
+  char path[LINE_MAX_BUFFER_SIZE];
+	char* cmd = "./getFile";
+  /* Open the command for reading. */
+  fp = popen(cmd, "r");
+  if (fp == NULL) {
+    return -1;
+  }
+ 
+  int cnt = 0;
+  while (fgets(path, sizeof(path), fp) != NULL) {
+    strcpy(lines[cnt++], path);
+  }
+  pclose(fp);
+  return cnt;  
 }
