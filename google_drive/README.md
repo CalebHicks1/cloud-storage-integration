@@ -9,14 +9,13 @@ You can either compile to an executable via `go build main.go...` or run using `
 - `list`, `upload`, and `delete` are suppoerted now
     
 #### `-p` : the path where we want to perform the API call
-- default is `root`
-- format is "dir/.../dir/{file,dir}" or just "{file,dir}" if in Google Drive root
+- `root` is default
+- format is `dir/.../dir/{file,dir}` or just `{file,dir}` if in Google Drive root
 
 #### `-f` : the path to the file we want to upload
 - required only if using `-t upload`
     
 ## Examples
-
 
 `go run main.go -t list`
 
