@@ -49,7 +49,6 @@ int is_dir( const char *path )
 
 void add_file( const char *filename )
 {
-	printf("add_file: filename: %s\n", filename);
 	curr_file_idx++;
 	strcpy( files_list[ curr_file_idx ], filename );
 	
@@ -121,6 +120,7 @@ static int do_readdir( const char *path, void *buffer, fuse_fill_dir_t filler, o
 {
 	filler( buffer, ".", NULL, 0 ); // Current Directory
 	filler( buffer, "..", NULL, 0 ); // Parent Directory
+	
 	if ( strcmp( path, "/" ) == 0 ) // If the user is trying to show the files/directories of the root directory show the following
 	{
 		for ( int curr_idx = 0; curr_idx <= curr_dir_idx; curr_idx++ )
@@ -129,21 +129,8 @@ static int do_readdir( const char *path, void *buffer, fuse_fill_dir_t filler, o
 		for ( int curr_idx = 0; curr_idx <= curr_file_idx; curr_idx++ )
 			filler( buffer, files_list[ curr_idx ], NULL, 0 );
 	}
-	else if (*path == '/') {
-		printf("READDIR: subdirectory %s\n", path);
-		for ( int curr_idx = 0; curr_idx <= curr_file_idx; curr_idx++ ) {
-			//Add 1 to elimate forward-slash
-			printf("curr: %s\n", files_list[curr_idx]);
-			if (strncmp(path + 1, files_list[ curr_idx ], strlen(path + 1)) == 0) {
-				printf("patch found: %s\n", files_list[ curr_idx ]);
-				printf("reduced name: %s\n", files_list[ curr_idx ] + strlen(path + 1));
-				//filler( buffer, files_list[ curr_idx ], NULL, 0 );
-				filler(buffer, files_list[ curr_idx ] + strlen(path), NULL, 0);
-			}
-		}
-	}
 	
-	return 0;	
+	return 0;
 }
 
 static int do_read( const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi )
