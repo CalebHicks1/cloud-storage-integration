@@ -62,6 +62,13 @@ static int do_getattr( const char *path, struct stat *st )
 	
 	return 0;
 }
+
+/*
+* passing in a json object, function returns a string value representation of 
+file name.
+If json object is a json string -  dump object to string
+If json object is not a string - check object for a filename 
+*/
 const char* getJsonFileName(json_t* file){
 	if (json_is_string(file) ){
 		return  json_string_value(file);
@@ -129,6 +136,10 @@ static struct fuse_operations operations = {
    // .read		= do_read,
 };
 
+/*
+* main calls getFileList, if successful main sets global variables and starts fuse_main
+*
+*/
 int main( int argc, char *argv[] )
 {
 	char execOutput[100][LINE_MAX_BUFFER_SIZE];
@@ -153,6 +164,17 @@ int main( int argc, char *argv[] )
 }
 
 
+/**
+ * Gets a string array and returns a json array.
+ * Input: json_t** json object to be modified
+ * char string array
+ * int number of lines in the string array
+ * 
+ * Return: <1 error occurred in parsing or no array items were found
+ * 
+ * >=1 number of items in json array.
+ * 
+ **/
 int parseJsonString(json_t** fileListAsJson, char stringArray[][LINE_MAX_BUFFER_SIZE], int numberOfLines){
 
 	char* fileListAsString = calloc((numberOfLines * LINE_MAX_BUFFER_SIZE) +1, sizeof(char));
@@ -176,10 +198,15 @@ int parseJsonString(json_t** fileListAsJson, char stringArray[][LINE_MAX_BUFFER_
 
 
 	return json_array_size(*fileListAsJson);
-
 }
 
 
+/**
+ * Runs an executable (currently ./getFile but can be replaced by any shell command with its path)
+ * Input: char list to output command results to
+ * Output: Number of lines found in executable output
+ * 	-1 -> executable failed to run or was not found.
+ **/
 int getFileList(char lines[][LINE_MAX_BUFFER_SIZE]) {
   FILE *fp;
   char path[LINE_MAX_BUFFER_SIZE];
