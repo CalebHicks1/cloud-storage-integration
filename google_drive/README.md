@@ -19,19 +19,23 @@ You can either compile to an executable via `go build main.go...` or run using `
 
 `go run main.go -t list`
 
-Lists all files in the root directory of the given Google Drive account (same as running `go run main.go`)
+Lists all files and folders in the root Google Drive directory (same as running `go run main.go`)
 
 `go run main.go -t list -p Main`
 
-This lists all files in the folder named "Main" in the root Google Drive directory
+Lists all files and fodlers in `Main` in the root Google Drive directory
 
 `go run main.go -t upload -f test_file.txt -p Main/Test`
 
-Uploads `test_file.txt` to the folder "Main/Test" in the root Google Drive directory
+Uploads `test_file.txt` to `Main/Test` in the root Google Drive directory
 
 `go run main.go -t delete -p Main/Test`
 
-Recursively deletes the folder "Main/Test" in the root Google Drive directory
+Recursively deletes `Main/Test` in the root Google Drive directory
+
+`go run main.go -t delete -p Main/Test/test_file.txt`
+
+Deletes the file `test_file.txt` in `Main/Test` in the root Google Drive directory
 
 ## Credentials
 
