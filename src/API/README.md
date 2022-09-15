@@ -9,7 +9,7 @@ Below are the valid operations that the API clients support along with their val
 
 Valid paths:
 - root directory: `"/"`, `""`
-- other directories: `"/dir1/dir2"`, `"dir1/dir2"`, `"/dir1/dir2/"`, `"dir1/dir2"`
+- other directories: `"/dir1/dir2/"`, `"/dir1/dir2"`, `"dir1/dir2/"`, `"dir1/dir2"`
 
 Valid filenames:
 - provide the absolute path to the file on your system to be uploaded
