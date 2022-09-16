@@ -293,7 +293,7 @@ func DeleteFile(srv *drive.Service, path string) error {
 func FindFile(srv *drive.Service, path string) (*drive.File, error) {
 
 	// return the root if that is what we are looking for
-	if path == "root" || path == "" {
+	if path == "root" || path == "" || path == "/" {
 		return &drive.File{Id: "root"}, nil
 	}
 
