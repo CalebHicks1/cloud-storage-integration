@@ -33,7 +33,7 @@ type Command struct {
 	File string `json:"file"`
 }
 
-// Starter code from: https://developers.google.com/drive/api/quickstart/go
+// Starter OAuth 2.0 code from: https://developers.google.com/drive/api/quickstart/go
 
 // Retrieve a token, saves the token, then returns the generated client.
 func getClient(config *oauth2.Config) *http.Client {
