@@ -21,3 +21,8 @@ sudo ./nfs_api
 ```
 # Notes
 - The `nfs_api` file must be run as root in order to mount the nfs drive.
+
+# TODO
+- [] Read server, mount point configuration from command line(?) on startup.
+- [] Read from NFS mount based on json command.
+- [] Output valid json response 
