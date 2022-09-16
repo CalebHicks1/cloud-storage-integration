@@ -1,0 +1,5 @@
+{"command":"list","path":"","file":""}
+{"command":"list","path":"Main","file":""}
+{"command":"upload","path":"Main/Test","file":"test_in.txt"}
+{"command":"delete","path":"Main/go.sum","file":""}
+{"command":"shutdown","path":"","file":""}
