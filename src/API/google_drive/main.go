@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,7 +17,23 @@ import (
 	"google.golang.org/api/option"
 )
 
-// Starter code from: https://developers.google.com/drive/api/quickstart/go
+type ErrorCode int
+
+const (
+	NO_ERROR ErrorCode = iota
+	CLIENT_FAILED
+	COMMAND_FAILED
+	INVALID_COMMAND
+	INVALID_INPUT
+)
+
+type Command struct {
+	Type string `json:"command"`
+	Path string `json:"path"`
+	File string `json:"file"`
+}
+
+// Starter OAuth 2.0 code from: https://developers.google.com/drive/api/quickstart/go
 
 // Retrieve a token, saves the token, then returns the generated client.
 func getClient(config *oauth2.Config) *http.Client {
@@ -76,12 +92,6 @@ func saveToken(path string, token *oauth2.Token) {
 
 func main() {
 
-	// parse command line args
-	callType := flag.String("t", "list", "the type of API call we want to perform")
-	path := flag.String("p", "root", "the path to perform the API call in/on")
-	file := flag.String("f", "", "the file to perform the API call on")
-	flag.Parse()
-
 	ctx := context.Background()
 	b, err := os.ReadFile("credentials.json")
 	if err != nil {
@@ -100,33 +110,83 @@ func main() {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}
 
-	// determine the type of API call we wan to perform
-	switch *callType {
-	case "list":
-		// we want to list files in the given folder
-		files, err := GetFilesInFolder(srv, *path)
+	// loop until we are told to shutdown
+	reader, servicing := bufio.NewReader(os.Stdin), true
+	for servicing {
+
+		cmd, response, errCode := Command{}, `{"SUCCESS"}`, NO_ERROR
+
+		// read and check if pipe has been closed
+		line, err := reader.ReadString('\n')
 		if err != nil {
-			Exitf("Error getting files from folder %s:\n%s", *path, err)
+			log.Printf("Issue reading\n%s", err)
+			cmd.Type = "shutdown"
 		}
-		// print all file names to STDOUT
-		for _, f := range files {
-			fmt.Println(f.Name)
-		}
-	case "upload":
-		// we want to uplaod the given file
-		res, err := UploadFile(srv, *file, *path)
+
+		// parse JSON into struct
+		err = json.Unmarshal([]byte(line), &cmd)
 		if err != nil {
-			Exitf("Problem uploading '%s' to Google Drive\n%s", *file, err)
+			log.Printf("Issue unmarchaling\n%s", err)
+			errCode = INVALID_INPUT
+			cmd.Type = ""
 		}
-		fmt.Printf("File '%s' uploaded (%s)\n", *file, res.Id)
-	case "delete":
-		err = DeleteFile(srv, *path)
-		if err != nil {
-			Exitf("Error deleting '%s'\n%s", *path, err)
+
+		// determine the type of API call we wan to perform
+		switch cmd.Type {
+		case "list":
+			// we want to list files in the given folder
+			files, err := GetFilesInFolder(srv, cmd.Path)
+			if err != nil {
+				log.Printf("Error getting files from folder %s:\n%s", cmd.Path, err)
+				errCode = COMMAND_FAILED
+				break
+			}
+
+			// log all file names and form JSON response
+			response = `{"`
+			for i, f := range files {
+				if i != 0 {
+					response += `, "`
+				}
+				response += f.Name + `"`
+				log.Println(f.Name)
+			}
+			response += `}`
+
+		case "upload":
+			// we want to uplaod the given file to the given path
+			res, err := UploadFile(srv, cmd.File, cmd.Path)
+			if err != nil {
+				log.Printf("Problem uploading '%s' to Google Drive\n%s", cmd.File, err)
+				errCode = COMMAND_FAILED
+				break
+			}
+			log.Printf("File '%s' uploaded (%s)\n", cmd.File, res.Id)
+
+		case "delete":
+			// we want to uplaod the file/folder at the given path
+			err = DeleteFile(srv, cmd.Path)
+			if err != nil {
+				log.Printf("Error deleting '%s'\n%s", cmd.Path, err)
+				errCode = COMMAND_FAILED
+				break
+			}
+			log.Printf("Successfully deleted '%s'\n", cmd.Path)
+
+		case "shutdown":
+			// stop servicing API calls
+			servicing = false
+
+		default:
+			log.Printf("Invalid API call type '%s'\n", cmd.Type)
+			errCode = INVALID_COMMAND
 		}
-		fmt.Printf("Successfully deleted '%s'\n", *path)
-	default:
-		Exitf("Invalid API call type '%s'\n", *callType)
+
+		if errCode != NO_ERROR {
+			response = fmt.Sprintf(`{"%d"}`, errCode)
+		}
+
+		fmt.Println(response)
 	}
 }
 
@@ -231,18 +291,20 @@ func DeleteFile(srv *drive.Service, path string) error {
 // FindFile find the file/folder given by path
 // Path Format: "dir/.../dir/{file,dir}" or just "{file,dir}" if in Google Drive root
 func FindFile(srv *drive.Service, path string) (*drive.File, error) {
-	if path == "" {
-		return nil, fmt.Errorf("empty path")
-	}
 
 	// return the root if that is what we are looking for
-	if path == "root" {
+	if path == "root" || path == "" || path == "/" {
 		return &drive.File{Id: "root"}, nil
 	}
 
 	// remove leading / if necessary
 	if string(path[0]) == "/" {
 		path = path[1:]
+	}
+
+	// remove trailing / if necessary
+	if string(path[len(path)-1]) == "/" {
+		path = path[:len(path)-1]
 	}
 
 	parents := strings.Split(path, "/")

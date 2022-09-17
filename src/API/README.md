@@ -35,7 +35,23 @@ input JSON = `{"command":"delete","path":"<valid_path>","file":""}`
 
 response JSON = `{"SUCCESS"}`, `{"<ERROR_CODE>"}`
 
+### Shutdown Client - `shutdown`
+How to terminate a API client.
+
+input JSON = `{"command":"shutdown","path":"","file":""}`
+
+response JSON = `{"SUCCESS"}`, `{"<ERROR_CODE>"}`
+
 ## Error Codes
 
-### 1 - Command Failed
-General error that tells the filesystem that the command failed.
+### 1 - Client Failed
+General error that tells the parent that the client failed.
+
+### 2 - Command Failed
+General command related error that tells the parent that the command failed.
+
+### 3 - Invalid Command
+Tells the parent that the value of the `command` key is invalid.
+
+### 4 - Invalid Input
+Tells the parent that the input passed to STDIN couldn't be parsed.
