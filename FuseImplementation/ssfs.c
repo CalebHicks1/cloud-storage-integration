@@ -36,7 +36,7 @@ typedef struct Drive_Object Drive_Object;
 struct Drive_Object Drives[NUM_DRIVES] = 
 { 
 	{"Test_Dir", NULL, -1, "./getFile", 0} ,
-	{"Google_Drive", NULL, -1, "echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"/myfuse\\\",\\\"file\\\":\\\"\\\"}\" | ../src/API/google_drive/google_drive_client", 0}
+	{"Google_Drive", NULL, -1, "echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ../src/API/google_drive/google_drive_client", 0}
 };
 
 
@@ -297,7 +297,9 @@ int getFileList(char lines[][LINE_MAX_BUFFER_SIZE]) {
   }
  
   int cnt = 0;
-  while (fgets(path, sizeof(path), fp) != NULL) {
+     
+  if (fgets(path, sizeof(path), fp) != NULL) {
+	
     strcpy(lines[cnt++], path);
   }
   pclose(fp);
@@ -319,10 +321,11 @@ int parseJsonString(json_t** fileListAsJson, char stringArray[][LINE_MAX_BUFFER_
 
 	char* fileListAsString = calloc((numberOfLines * LINE_MAX_BUFFER_SIZE) +1, sizeof(char));
 	for( int i = 0; i < numberOfLines; i++){
-		fileListAsString = strncat(fileListAsString, stringArray[i], strlen(stringArray[i]));
+		printf("%s",stringArray[i]);
+		fileListAsString = strncat(fileListAsString, stringArray[0], strlen(stringArray[0]));
 	}
 
-
+	printf("%s",fileListAsString);
 	json_error_t* errorCheck = NULL;
 	*fileListAsJson = json_loads(fileListAsString, 0, errorCheck);
 

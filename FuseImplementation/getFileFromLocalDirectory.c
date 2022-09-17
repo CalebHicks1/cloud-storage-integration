@@ -22,9 +22,11 @@ int main(void)
         if (de->d_type == DT_REG)
             json_array_append(file_name_array,json_string(de->d_name));
     }
+	
 
     json_dumpfd(file_name_array, 1, 0);
-
+	printf("\n");
+printf("Newline\n");
 
 	closedir(dr);	
 	return 0;
