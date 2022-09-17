@@ -109,7 +109,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}
-
+	log.Printf("Waiting to read\n");
 	// loop until we are told to shutdown
 	reader, servicing := bufio.NewReader(os.Stdin), true
 	for servicing {
@@ -141,6 +141,7 @@ func main() {
 				errCode = COMMAND_FAILED
 				break
 			}
+			
 
 			// log all file names and form JSON response
 			response = `{"`
@@ -179,14 +180,16 @@ func main() {
 
 		default:
 			log.Printf("Invalid API call type '%s'\n", cmd.Type)
+			log.Fatalf("Terminating");
 			errCode = INVALID_COMMAND
 		}
 
 		if errCode != NO_ERROR {
 			response = fmt.Sprintf(`{"%d"}`, errCode)
 		}
-
+		
 		fmt.Println(response)
+		log.Fatalf("Terminating");
 	}
 }
 
