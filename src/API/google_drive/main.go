@@ -144,7 +144,7 @@ func main() {
 			
 
 			// log all file names and form JSON response
-			response = `{"`
+			response = `["`
 			for i, f := range files {
 				if i != 0 {
 					response += `, "`
@@ -152,7 +152,7 @@ func main() {
 				response += f.Name + `"`
 				log.Println(f.Name)
 			}
-			response += `}`
+			response += `]`
 
 		case "upload":
 			// we want to uplaod the given file to the given path
