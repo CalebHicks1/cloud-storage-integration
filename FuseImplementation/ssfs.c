@@ -36,7 +36,7 @@ typedef struct Drive_Object Drive_Object;
 struct Drive_Object Drives[NUM_DRIVES] = 
 { 
 	{"Test_Dir", NULL, -1, "./getFile", 0} ,
-	{"Google_Drive", NULL, -1, "echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ../src/API/google_drive/google_drive_client", 0}
+	{"Google_Drive", NULL, -1, "echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ../src/API/google_drive/quickstart", 0}
 };
 
 
