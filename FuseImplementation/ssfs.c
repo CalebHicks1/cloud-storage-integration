@@ -31,12 +31,15 @@ struct Drive_Object {
 	
 };
 typedef struct Drive_Object Drive_Object;
-
+//"echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ../src/API/google_drive/quickstart"
 #define NUM_DRIVES 2
 struct Drive_Object Drives[NUM_DRIVES] = 
 { 
 	{"Test_Dir", NULL, -1, "./getFile", 0} ,
-	{"Google_Drive", NULL, -1, "echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ../src/API/google_drive/quickstart", 0}
+	//Just have the name of the executable
+	//Functions will assume executable has the same API format as the google drive one
+	//ie., they will echo a json object into executable's stdin, and expect a json object returned in its stdout
+	{"Google_Drive", NULL, -1, "../src/API/google_drive/quickstart", 0}
 };
 
 
@@ -66,9 +69,10 @@ int is_in_drive(const char * path) {
 	
 }
 
+//Works for path = drivename, or path = drivename/somefile
 int get_drive_index(char * path) {
 	for (int i = 0; i < NUM_DRIVES; i++) {
-		if (strcmp(path + 1, Drives[i].dirname) == 0) {
+		if (strncmp(path + 1, Drives[i].dirname, strlen(Drives[i].dirname)) == 0) {
 			return i;
 		}
 	}
@@ -86,8 +90,12 @@ static int do_getattr( const char *path, struct stat *st )
 		return 0;
 	}
 	else if (is_in_drive(path) == 0) {
-		printf("Element in drive\n");
+		printf("\tElement in drive\n");
 		//@alowe Here is where we want API call
+		char formatted_command[500];
+		sprintf(&formatted_command[0], "%s %s", "echo \"{\\\"command\\\":\\\"get_attributes\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ", Drives[get_drive_index((char*) path)].exec_path);
+		printf("\tCommand: %s\n", &formatted_command[0]);
+		
 	}
 	
 	// GNU's definitions of the attributes (http://www.gnu.org/software/libc/manual/html_node/Attribute-Meanings.html):
@@ -211,7 +219,11 @@ int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char * cmd) {
   FILE *fp;
   char path[LINE_MAX_BUFFER_SIZE];
   /* Open the command for reading. */
-  fp = popen(cmd, "r");
+  
+  //Format command as a list query for root directory
+  char formatted_command[500];
+  sprintf(&formatted_command[0], "%s %s", "echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ", cmd);
+  fp = popen(&formatted_command[0], "r");
   if (fp == NULL) {
     return -1;
   }
@@ -224,29 +236,33 @@ int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char * cmd) {
   return cnt;  
 }
 
+int update_drive(int i) {
+	printf("Generating FileList for %s\n", Drives[i].dirname);
+	char execOutput[100][LINE_MAX_BUFFER_SIZE];
+	int a = myGetFileList(execOutput, Drives[i].exec_path);
+	
+	json_t* fileListAsArray ;
+	
+
+	if (a < 1){
+		printf("file list getter was not executed properly or output was empty\n");
+		return -1;	
+	}
+
+
+	int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
+
+	if (arraySize < 1){
+		return arraySize;
+	}
+	Drives[i].FileList = json_deep_copy(fileListAsArray);
+	Drives[i].num_files = arraySize;
+	printf("iteration complete\n");
+}
+
 int populate_filelists() {
 	for (int i = 0; i < NUM_DRIVES; i++) {
-		printf("Generating FileList for %s\n", Drives[i].dirname);
-		char execOutput[100][LINE_MAX_BUFFER_SIZE];
-		int a = myGetFileList(execOutput, Drives[i].exec_path);
-		
-		json_t* fileListAsArray ;
-		
-
-		if (a < 1){
-			printf("file list getter was not executed properly or output was empty\n");
-			return -1;	
-		}
-
-   
-		int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
-	
-		if (arraySize < 1){
-			return arraySize;
-		}
-		Drives[i].FileList = json_deep_copy(fileListAsArray);
-		Drives[i].num_files = arraySize;
-		printf("iteration complete\n");
+		update_drive(i);
 	}
 }
 
