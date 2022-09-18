@@ -25,8 +25,7 @@ int main(void)
 	
 
     json_dumpfd(file_name_array, 1, 0);
-	printf("\n");
-printf("Newline\n");
+
 
 	closedir(dr);	
 	return 0;

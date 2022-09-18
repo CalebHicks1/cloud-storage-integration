@@ -137,8 +137,8 @@ static int do_readdir( const char *path, void *buffer, fuse_fill_dir_t filler, o
 			return -1;
 		}
 		Drive_Object currDrive = Drives[index];
-		for (size_t index = 0; index < (currDrive.num_files*sizeof(json_t)); index += sizeof(json_t)) {
-			const char* fileName = getJsonFileName(json_array_get(currDrive.FileList, 0));
+		for (size_t index = 0; index < currDrive.num_files; index ++) {
+			const char* fileName = getJsonFileName(json_array_get(currDrive.FileList, index));
 			
 			if (fileName != NULL){
 			filler( buffer, fileName, NULL, 0 );
@@ -153,19 +153,7 @@ static int do_readdir( const char *path, void *buffer, fuse_fill_dir_t filler, o
 	
 	if ( strcmp( path, "/" ) == 0 ) // If the user is trying to show the files/directories of the root directory show the following
 	{
-		//printf("readd dump %s\n", json_dumps(FileList, 0));
-		//for(size_t index = 0; index < (SizeOfFileList*sizeof(json_t)); index+= sizeof(json_t)){
 		
-			//const char* fileName = getJsonFileName(json_array_get(FileList, 0));
-			
-			//if (fileName != NULL){
-			//filler( buffer, fileName, NULL, 0 );
-			//}
-			//else{
-				//printf("NULL");
-			//}
-		
-		//}
 		//We want to list our drives
 		for (int i = 0; i < NUM_DRIVES; i++) {
 			filler(buffer, Drives[i].dirname, NULL, 0);
