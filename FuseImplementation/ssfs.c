@@ -56,6 +56,16 @@ int is_drive(const char *path) {
 	return -1;
 }
 
+int is_in_drive(const char * path) {
+	for (int i = 0; i < NUM_DRIVES; i++) {
+		if (strncmp(Drives[i].dirname, path + 1, strlen(Drives[i].dirname)) == 0) {
+			return 0;
+		}
+	}
+	return -1;
+	
+}
+
 int get_drive_index(char * path) {
 	for (int i = 0; i < NUM_DRIVES; i++) {
 		if (strcmp(path + 1, Drives[i].dirname) == 0) {
@@ -63,7 +73,6 @@ int get_drive_index(char * path) {
 		}
 	}
 	return -1;
-	
 }
 
 static int do_getattr( const char *path, struct stat *st )
@@ -75,6 +84,10 @@ static int do_getattr( const char *path, struct stat *st )
 		st->st_mode = S_IFDIR | 0755;
 		st->st_nlink = 2; // Why "two" hardlinks instead of "one"? The answer is here: http://unix.stackexchange.com/a/101536
 		return 0;
+	}
+	else if (is_in_drive(path) == 0) {
+		printf("Element in drive\n");
+		//@alowe Here is where we want API call
 	}
 	
 	// GNU's definitions of the attributes (http://www.gnu.org/software/libc/manual/html_node/Attribute-Meanings.html):
