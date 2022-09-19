@@ -95,6 +95,7 @@ static int do_getattr( const char *path, struct stat *st )
 		char formatted_command[500];
 		sprintf(&formatted_command[0], "%s %s", "echo \"{\\\"command\\\":\\\"get_attributes\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ", Drives[get_drive_index((char*) path)].exec_path);
 		printf("\tCommand: %s\n", &formatted_command[0]);
+		//Here is where we would popen the formatted command 
 		
 	}
 	
@@ -274,26 +275,27 @@ int populate_filelists() {
 */
 int main( int argc, char *argv[] )
 {
-	char execOutput[100][LINE_MAX_BUFFER_SIZE];
-	int a = getFileList(execOutput);
+	//char execOutput[100][LINE_MAX_BUFFER_SIZE];
+	//int a = getFileList(execOutput);
 	json_t* fileListAsArray ;
 	populate_filelists();
 
-	if (a < 1){
-		printf("file list getter was not executed properly or output was empty\n");
-		return -1;	
-	 }
+	//if (a < 1){
+		//printf("file list getter was not executed properly or output was empty\n");
+		//return -1;	
+	 //}
 
    
-	int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
+	//int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
 	
-	if (arraySize < 1){
-		return arraySize;
-	}
-	FileList = json_deep_copy(fileListAsArray);
-	SizeOfFileList = arraySize;
+	//if (arraySize < 1){
+		//return arraySize;
+	//}
+	//FileList = json_deep_copy(fileListAsArray);
+	//SizeOfFileList = arraySize;
 
 	return fuse_main( argc, argv, &operations, NULL );
+
 }
 
 /**

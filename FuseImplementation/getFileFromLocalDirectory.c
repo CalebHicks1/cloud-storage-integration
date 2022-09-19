@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <jansson.h>
+#include <string.h>
+#include <stdbool.h>
 
 int main(void)
 {

@@ -10,7 +10,7 @@ build: $(FILESYSTEM_FILES)
 
 
 getFile: getFileFromLocalDirectory.c
-	$(COMPILER) getFileFromLocalDirectory.c -o getFile -ljansson
+	$(COMPILER) -ggdb3 getFileFromLocalDirectory.c -o getFile -ljansson
 
 clean:
 	rm fuse
