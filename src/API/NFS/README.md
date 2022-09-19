@@ -12,9 +12,9 @@ go build .
 # Run
 Example command:
 ```
-echo '{"command":"ls", "path":"/", "file":"example"}' | sudo ./nfs_api
+echo '{"command":"list", "path":"/", "file":"example"}' | sudo ./nfs_api
 ```
-Rr execute `nfs_api` then write the json arg:
+Or execute `nfs_api` then write the json arg:
 ```
 sudo ./nfs_api
 {"command":"ls", "path":"/", "file":"example"}
@@ -26,3 +26,14 @@ sudo ./nfs_api
 - [] Read server, mount point configuration from command line(?) on startup.
 - [] Read from NFS mount based on json command.
 - [] Output valid json response 
+
+# Commands
+## List
+Usage:
+```
+{"command":"list","path":"<valid_path>","file":""}
+```
+Output
+```
+[{"Name":"dir1","IsDir":true},{"Name":"file3","IsDir":false},{"Name":"hello.txt","IsDir":false}]
+```
