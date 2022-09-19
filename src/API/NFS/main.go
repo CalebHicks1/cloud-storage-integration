@@ -24,34 +24,11 @@ type File struct {
 func main() {
 	mountPath := "/mnt/nfs_client/"
 	nfsServerPath := "cap.calebhicks.net:/mnt/nfs_shared_dir"
-	// get executable path for 'mount' command
-	mountExecutable, err := exec.LookPath("mount")
-	if err != nil {
-		fmt.Print(err)
-	}
-	// `mount` command
-	mountCommand := &exec.Cmd{
-		Path:   mountExecutable,
-		Args:   []string{mountExecutable, nfsServerPath, mountPath},
-		Stdout: os.Stdout,
-		Stderr: os.Stdout,
-	}
-	umountExecutable, err := exec.LookPath("umount")
-	if err != nil {
-		fmt.Print(err)
-	}
-
-	// `umount` command
-	umountCommand := &exec.Cmd{
-		Path:   umountExecutable,
-		Args:   []string{umountExecutable, "/mnt/nfs_client/"},
-		Stdout: os.Stdout,
-		Stderr: os.Stdout,
-	}
 
 	// mount nfs drive
-	if err := mountCommand.Run(); err != nil {
-		fmt.Println("Error: ", err)
+	err := mountNFS(mountPath, nfsServerPath)
+	if err != nil {
+		fmt.Println("Error", err)
 	}
 
 	reader := bufio.NewReader(os.Stdin)
@@ -68,12 +45,56 @@ func main() {
 	}
 
 	// unmount nfs drive
-	if err := umountCommand.Run(); err != nil {
-		fmt.Println("Error: ", err)
+	err = umountNFS(mountPath)
+	if err != nil {
+		fmt.Println("Error", err)
 	}
 }
 
+func mountNFS(mountPath string, nfsServerPath string) (err error) {
+	// get path for mount executable
+	mountExecutable, err := exec.LookPath("mount")
+	if err != nil {
+		fmt.Print(err)
+	}
+	// `mount` command
+	mountCommand := &exec.Cmd{
+		Path:   mountExecutable,
+		Args:   []string{mountExecutable, nfsServerPath, mountPath},
+		Stdout: os.Stdout,
+		Stderr: os.Stdout,
+	}
+	if err := mountCommand.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func umountNFS(mountPath string) (err error) {
+	umountExecutable, err := exec.LookPath("umount")
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	// `umount` command
+	umountCommand := &exec.Cmd{
+		Path:   umountExecutable,
+		Args:   []string{umountExecutable, mountPath},
+		Stdout: os.Stdout,
+		Stderr: os.Stdout,
+	}
+	// execute umount
+	if err := umountCommand.Run(); err != nil {
+		fmt.Println("Error: ", err)
+	}
+	return nil
+}
+
 // FILE OPERATIONS ///////////////////////////////////////////////////
+
+/*
+	Read the command argument from json input, then print the relevant response.
+*/
 func parseJsonInput(text string, mountPath string) {
 	var input Input // input command
 	json.Unmarshal([]byte(text), &input)
@@ -84,7 +105,7 @@ func parseJsonInput(text string, mountPath string) {
 	case "list":
 		response = list(input.Path, mountPath)
 	default:
-		response = "not implemented"
+		response = "{\"error\": \"command not implemented\"}"
 	}
 
 	fmt.Println(response)
@@ -93,6 +114,7 @@ func parseJsonInput(text string, mountPath string) {
 /*
 	path: the path given by the fuse call
 	mountPath: the path that the nfs server is mounted to.
+	Return json string that will be printed
 */
 func list(path string, mountPath string) string {
 

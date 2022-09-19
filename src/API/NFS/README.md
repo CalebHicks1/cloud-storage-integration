@@ -24,8 +24,8 @@ sudo ./nfs_api
 
 # TODO
 - [] Read server, mount point configuration from command line(?) on startup.
-- [] Read from NFS mount based on json command.
-- [] Output valid json response 
+- [X] Read from NFS mount based on json command.
+- [X] Output valid json response 
 
 # Commands
 ## List
