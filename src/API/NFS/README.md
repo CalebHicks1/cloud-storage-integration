@@ -29,11 +29,19 @@ sudo ./nfs_api
 
 # Commands
 ## List
-Usage:
+Input:
 ```
-{"command":"list","path":"<valid_path>","file":""}
+{"command":"list","path":"/","file":""}
 ```
 Output
 ```
 [{"Name":"dir1","IsDir":true},{"Name":"file3","IsDir":false},{"Name":"hello.txt","IsDir":false}]
+```
+Input:
+```
+{"command":"list","path":"dir1","file":""}
+```
+Output:
+```
+[{"Name":"file1","IsDir":false},{"Name":"file2","IsDir":false}]
 ```
