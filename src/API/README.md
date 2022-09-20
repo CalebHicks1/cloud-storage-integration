@@ -16,8 +16,8 @@ Valid file inputs:
 - or, provide the relative path from your API client's directory
 
 Valid file outputs:
-- `{"Name":"file.txt", "IsDir":"false", "Size":"1024"}`
-- `{"Name":"dir1", "IsDir":"true", "Size":"0"}`
+- `{"Name":"file.txt","IsDir":false,"Size":1024}`
+- `{"Name":"dir1","IsDir":true,"Size":0}`
 - the size should be in bytes (0 for folders right now)
 
 ### List Files - `list`
@@ -25,28 +25,28 @@ How to format a call that lists all files in a directory given by the `path` fie
 
 input JSON = `{"command":"list","path":"<valid_path>","file":""}`
 
-response JSON = `[<file1>, <file2>, ...]`, `{"<ERROR_CODE>"}` (on error)
+response JSON = `[<file1>, <file2>, ...]`, `{<ERROR_CODE>}` (on error)
 
 ### Upload Files - `upload`
 How to format a call that uploads a file given by the `file` field to a directory given by the `path` field.
 
 input JSON = `{"command":"upload","path":"<valid_path>","file":"<filename>"}`
 
-response JSON = `{"<ERROR_CODE>"}`
+response JSON = `{<ERROR_CODE>}`
 
 ### Delete Files - `delete`
 How to format a call that deletes a file/folder (folders recursively delete) given by the `path` field.
 
 input JSON = `{"command":"delete","path":"<valid_path>","file":""}`
 
-response JSON = `{"<ERROR_CODE>"}`
+response JSON = `{<ERROR_CODE>}`
 
 ### Shutdown Client - `shutdown`
 How to terminate a API client.
 
 input JSON = `{"command":"shutdown","path":"","file":""}`
 
-response JSON = `{"<ERROR_CODE>"}`
+response JSON = `{<ERROR_CODE>}`
 
 ## Error Codes
 

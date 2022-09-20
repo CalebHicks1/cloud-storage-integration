@@ -39,7 +39,7 @@ type Response struct {
 // Returns the string representation of a Response (empty string on marshal error)
 func (r *Response) String() string {
 	if r.Files == nil {
-		return fmt.Sprintf(`{"%d"}`, r.ErrCode)
+		return fmt.Sprintf("{%d}", r.ErrCode)
 	}
 	fileJSON, err := json.Marshal(r.Files)
 	if err != nil {
