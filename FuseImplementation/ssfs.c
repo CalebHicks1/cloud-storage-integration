@@ -33,6 +33,12 @@ int update_drive(int i);
 static int do_readdir( const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi );
 static int do_getattr( const char *path, struct stat *st );
 
+/*Logging ********************************************************/
+//Call me like you would printf
+void fuse_log(char * fmt, ...);
+void __fuse_log(const char* caller_name, char * fmt, ...);
+#define fuse_log(...) __fuse_log(__func__, __VA_ARGS__)
+//see: https://stackoverflow.com/questions/16100090/how-can-we-know-the-caller-functions-name
 
 static struct fuse_operations operations = {
     .getattr	= do_getattr,
@@ -79,6 +85,7 @@ int main( int argc, char *argv[] )
 {
 	
 	//json_t* fileListAsArray ;
+	fuse_log("I'm calling from main, here are some args: %d %s\n", 2, "hi");
 	populate_filelists();
 
 	return fuse_main( argc, argv, &operations, NULL );
@@ -354,7 +361,14 @@ static int do_read( const char *path, char *buffer, size_t size, off_t offset, s
 	return strlen( selectedText ) - offset;
 }
 
+/*Logging ********************************************************/
 
+void __fuse_log(const char* caller_name, char * fmt, ...) {
+	printf("[%s] ", caller_name);
+	va_list arguments;
+	va_start(arguments, fmt);
+	vprintf(fmt, arguments);
+}
 
 
 
