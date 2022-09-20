@@ -144,18 +144,17 @@ func main() {
 			}
 
 			// log all file names and form JSON response
-			response = `["`
+			response = `[`
 			for i, f := range files {
 
 				if i != 0 {
-					response += `, "`
+					response += `, `
 				}
 				response += `{"Name":"`
 				response += f.Name + `"`
-				response += `, "`
+				response += `, `
 				response += `"Size":"`
 				response += strconv.FormatInt(f.Size, 10) + `"}`
-				response += `, "`
 				log.Println(f.Name)
 			}
 			response += `]`
