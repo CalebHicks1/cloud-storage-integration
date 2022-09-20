@@ -7,19 +7,8 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"types"
 )
-
-//example command: {"command":"ls", "path":"/", "file":"example"}
-type Input struct {
-	Command string
-	Path    string
-	File    string
-}
-
-type File struct {
-	Name  string
-	IsDir bool
-}
 
 func main() {
 	mountPath := "/mnt/nfs_client/"
@@ -96,14 +85,14 @@ func umountNFS(mountPath string) (err error) {
 	Read the command argument from json input, then print the relevant response.
 */
 func parseJsonInput(text string, mountPath string) {
-	var input Input // input command
-	json.Unmarshal([]byte(text), &input)
+	var cmd types.Command // input command
+	json.Unmarshal([]byte(text), &cmd)
 
 	var response string
 
-	switch input.Command {
+	switch cmd.Type {
 	case "list":
-		response = list(input.Path, mountPath)
+		response = list(cmd.Path, mountPath)
 	default:
 		response = "{\"error\": \"command not implemented\"}"
 	}
@@ -143,9 +132,9 @@ func list(path string, mountPath string) string {
 	source: https://golang.cafe/blog/how-to-list-files-in-a-directory-in-go.html
 	Returns a list of file objects
 */
-func readDir(path string) []File {
+func readDir(path string) []types.File {
 	// get list of files
-	var fileSlice []File
+	var fileSlice []types.File
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		fmt.Println("Error: ", err)
@@ -153,9 +142,10 @@ func readDir(path string) []File {
 
 	for _, file := range files {
 		//create file struct
-		newFile := File{
+		newFile := types.File{
 			Name:  file.Name(),
 			IsDir: file.IsDir(),
+			Size:  file.Size(),
 		}
 		fileSlice = append(fileSlice, newFile)
 	}
