@@ -163,7 +163,7 @@ func main() {
 	}
 }
 
-// https://developers.google.com/drive/api/v2/reference/files/list
+// help from: https://developers.google.com/drive/api/v2/reference/files/list
 // GetFilesInFolder fetches and displays all files in the given folder
 func GetFilesInFolder(drv *drive.Service, path string) ([]types.File, error) {
 
@@ -262,8 +262,6 @@ func DeleteFile(srv *drive.Service, path string) error {
 	if err != nil {
 		return err
 	}
-
-	// attempt to upload the file
 	return nil
 }
 

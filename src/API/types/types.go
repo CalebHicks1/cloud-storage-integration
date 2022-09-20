@@ -5,18 +5,21 @@ import (
 	"fmt"
 )
 
+// represnts the input JSON to the API clients
 type Command struct {
 	Type string `json:"command"`
 	Path string `json:"path"`
 	File string `json:"file"`
 }
 
+// the valid file output for the API clients
 type File struct {
 	Name  string `json:"Name"`
 	IsDir bool   `json:"IsDir"`
 	Size  int64  `json:"Size"`
 }
 
+// API client error codes
 type ErrorCode int
 
 const (
@@ -27,6 +30,7 @@ const (
 	INVALID_INPUT
 )
 
+// API client responses
 type Response struct {
 	ErrCode ErrorCode // the error code for this response
 	Files   []File    // the files to respond with (set to nil to return the ErrorCode)
