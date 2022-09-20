@@ -1,0 +1,6 @@
+{
+    "name": "ramdisk",
+    "type": "tmpfs",
+    "mountPath": "/mnt/ramdisk",
+    "size": "64M"
+}
