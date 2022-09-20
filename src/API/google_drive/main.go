@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/gabriel-vasile/mimetype"
@@ -109,7 +110,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}
-	log.Printf("Waiting to read\n");
+	log.Printf("Waiting to read\n")
 	// loop until we are told to shutdown
 	reader, servicing := bufio.NewReader(os.Stdin), true
 	for servicing {
@@ -141,15 +142,19 @@ func main() {
 				errCode = COMMAND_FAILED
 				break
 			}
-			
 
 			// log all file names and form JSON response
-			response = `["`
+			response = `[`
 			for i, f := range files {
+
 				if i != 0 {
-					response += `, "`
+					response += `, `
 				}
+				response += `{"Name":"`
 				response += f.Name + `"`
+				response += `, `
+				response += `"Size":"`
+				response += strconv.FormatInt(f.Size, 10) + `"}`
 				log.Println(f.Name)
 			}
 			response += `]`
@@ -180,16 +185,16 @@ func main() {
 
 		default:
 			log.Printf("Invalid API call type '%s'\n", cmd.Type)
-			log.Fatalf("Terminating");
+			log.Fatalf("Terminating")
 			errCode = INVALID_COMMAND
 		}
 
 		if errCode != NO_ERROR {
 			response = fmt.Sprintf(`{"%d"}`, errCode)
 		}
-		
+
 		fmt.Println(response)
-		log.Fatalf("Terminating");
+		log.Fatalf("Terminating")
 	}
 }
 
@@ -264,7 +269,7 @@ func UploadFile(srv *drive.Service, file, path string) (*drive.File, error) {
 	}
 
 	// attempt to upload the file
-	driveFile := &drive.File{Name: fileInfo.Name(), MimeType: mType.String(), Parents: []string{parent.Id}}
+	driveFile := &drive.File{Name: fileInfo.Name(), Size: fileInfo.Size(), MimeType: mType.String(), Parents: []string{parent.Id}}
 	return srv.Files.Create(driveFile).Media(f).ProgressUpdater(func(now, size int64) { fmt.Printf("%d, %d\r", now, size) }).Do()
 }
 
