@@ -152,6 +152,7 @@ func main() {
 
 		case "shutdown":
 			// stop servicing API calls
+			fmt.Fprintln(os.Stderr, "Shutting down...")
 			servicing = false
 
 		default:

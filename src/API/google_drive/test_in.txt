@@ -1,4 +1,5 @@
 {"command":"list","path":"","file":""}
-{"command":"list","path":"Main","file":""}
 {"command":"upload","path":"Main/Test","file":"test_file.txt"}
+{"command":"list","path":"Main","file":""}
+{"command":"delete","path":"Main/Test/test_file.txt","file":""}
 {"command":"shutdown","path":"","file":""}
