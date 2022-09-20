@@ -4,15 +4,16 @@ Google Drive client supported.
 ## How To Use 
 The API clients will communicate with your program via its STDOUT and STDIN. First run the API client for your desired cloud storage service as a child process of your program and set up a Unix pipe that allows you to send JSON data to the STDIN of the client as well as recieve JSON output from the client's STDOUT. 
 
-## Valid API Calls
+## I/O Formatting
 Below are the valid operations that the API clients support along with their valid input and output.
 
-Valid paths:
+Valid path inputs:
 - root directory: `"/"`, `""`
 - other directories: `"/dir1/dir2/"`, `"/dir1/dir2"`, `"dir1/dir2/"`, `"dir1/dir2"`
 
 Valid file inputs:
 - provide the absolute path to the file on your system to be uploaded
+- or, provide the relative path from your API client's directory
 
 Valid file outputs:
 - `{"Name":"file.txt", "IsDir":"false", "Size":"1024"}`
