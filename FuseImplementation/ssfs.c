@@ -20,8 +20,27 @@
 #include <stdlib.h>
 #include <jansson.h>
 #include <sys/stat.h>
+#include "JsonTools.h"
 
 
+/*Function definitions *******************************************/
+int is_drive(const char *path) ;
+struct Drive_Object* get_drive(const char * path) ;
+int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char * cmd);
+int get_drive_index(const char * path);
+int populate_filelists();
+int update_drive(int i);
+static int do_readdir( const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi );
+static int do_getattr( const char *path, struct stat *st );
+
+
+static struct fuse_operations operations = {
+    .getattr	= do_getattr,
+    .readdir	= do_readdir,
+   // .read		= do_read,
+};
+
+/*Global varibales and structs ***********************************/
 struct Drive_Object {
 	char dirname[200];
 	json_t* FileList;
@@ -39,17 +58,112 @@ struct Drive_Object Drives[NUM_DRIVES] =
 	//Just have the name of the executable
 	//Functions will assume executable has the same API format as the google drive one
 	//ie., they will echo a json object into executable's stdin, and expect a json object returned in its stdout
-	{"Google_Drive", NULL, -1, "../src/API/google_drive/quickstart", 0}
+	{"Google_Drive", NULL, -1, "../src/API/google_drive"/*quickstart*/, 0}
 };
 
 
-int getFileList(char lines[][LINE_MAX_BUFFER_SIZE]) ;
-int parseJsonString(json_t** fileListAsArray, char stringArray[][LINE_MAX_BUFFER_SIZE], int numberOfLines);
+/**********************************************************/
 
 
-json_t* FileList; 
-int SizeOfFileList = 0;
 
+
+
+
+/*Main function and Drive functions ***********************/
+
+/*
+* main calls getFileList, if successful main sets global variables and starts fuse_main
+*
+*/
+int main( int argc, char *argv[] )
+{
+	
+	//json_t* fileListAsArray ;
+	populate_filelists();
+
+	return fuse_main( argc, argv, &operations, NULL );
+
+}
+
+
+
+/**
+ * Calls update drive on each drive found to populate drives
+ * returns > 0 on success
+ * <= 0 on failure
+ */
+int populate_filelists() {
+	int res = 0;
+	for (int i = 0; i < NUM_DRIVES; i++) {
+		res += update_drive(i);
+	}
+	return res;
+}
+
+
+/**
+ * Calls a file list getter and fills all of the drive fields 
+ * returns 0 on failure
+ * 1 on success
+ */
+int update_drive(int i) {
+	printf("Generating FileList for %s\n", Drives[i].dirname);
+	char execOutput[100][LINE_MAX_BUFFER_SIZE];
+	int a = myGetFileList(execOutput, Drives[i].exec_path);
+	
+	json_t* fileListAsArray ;
+	
+
+	if (a < 1){
+		printf("file list getter was not executed properly or output was empty\n");
+		return 0;	
+	}
+
+
+	int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
+
+	if (arraySize < 1){
+		return 0;
+	}
+	Drives[i].FileList = json_deep_copy(fileListAsArray);
+	Drives[i].num_files = arraySize;
+	printf("iteration complete\n");
+	return 1;
+}
+
+
+/**
+ * 
+ * Calls an executable that gets a formatted output of file info
+ */
+int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char * cmd) {
+  FILE *fp;
+  char path[LINE_MAX_BUFFER_SIZE];
+  /* Open the command for reading. */
+  
+  //Format command as a list query for root directory
+  char formatted_command[500];
+  sprintf(&formatted_command[0], "%s %s", "echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ", cmd);
+  fp = popen(&formatted_command[0], "r");
+  if (fp == NULL) {
+    return -1;
+  }
+ 
+  int cnt = 0;
+  while (fgets(path, sizeof(path), fp) != NULL) {
+    strcpy(lines[cnt++], path);
+  }
+  pclose(fp);
+  return cnt;  
+}
+
+
+
+/*****************************************************************************/
+
+
+
+/*****Helper functions ******************************************************/
 int is_drive(const char *path) {
 	for (int i = 0; i < NUM_DRIVES; i++) {
 		if (strcmp(Drives[i].dirname, path + 1) == 0) {
@@ -59,18 +173,18 @@ int is_drive(const char *path) {
 	return -1;
 }
 
-int is_in_drive(const char * path) {
+struct Drive_Object* get_drive( const char * path) {
 	for (int i = 0; i < NUM_DRIVES; i++) {
 		if (strncmp(Drives[i].dirname, path + 1, strlen(Drives[i].dirname)) == 0) {
-			return 0;
+			return &Drives[i];
 		}
 	}
-	return -1;
+	return NULL;
 	
 }
 
 //Works for path = drivename, or path = drivename/somefile
-int get_drive_index(char * path) {
+int get_drive_index(const char * path) {
 	for (int i = 0; i < NUM_DRIVES; i++) {
 		if (strncmp(path + 1, Drives[i].dirname, strlen(Drives[i].dirname)) == 0) {
 			return i;
@@ -79,23 +193,57 @@ int get_drive_index(char * path) {
 	return -1;
 }
 
+
+
+
+/************************************************/
+
+
+/*Fuse Implementation **************************/
+
+// GNU's definitions of the attributes (http://www.gnu.org/software/libc/manual/html_node/Attribute-Meanings.html):
+	// 		st_uid: 	The user ID of the file’s owner.
+	//		st_gid: 	The group ID of the file.
+	//		st_atime: 	This is the last access time for the file.
+	//		st_mtime: 	This is the time of the last modification to the contents of the file.
+	//		st_mode: 	Specifies the mode of the file. This includes file type information (see Testing File Type) and the file permission bits (see Permission Bits).
+	//		st_nlink: 	The number of hard links to the file. This count keeps track of how many directories have entries for this file. If the count is ever decremented to zero, then the file itself is discarded as soon 
+	//						as no process still holds it open. Symbolic links are not counted in the total.
+	//		st_size:	This specifies the size of a regular file in bytes. For files that are really devices this field isn’t usually meaningful. For symbolic links this specifies the length of the file name the link refers to.
+	
 static int do_getattr( const char *path, struct stat *st )
 {
 	printf( "[getattr] Called\n" );
 	printf( "\tAttributes of %s requested\n", path );
+	Drive_Object* drive;
 	if (is_drive(path) == 0) {
 		printf("Drive found\n");
 		st->st_mode = S_IFDIR | 0755;
 		st->st_nlink = 2; // Why "two" hardlinks instead of "one"? The answer is here: http://unix.stackexchange.com/a/101536
 		return 0;
 	}
-	else if (is_in_drive(path) == 0) {
-		printf("\tElement in drive\n");
+	else if ((drive =get_drive(path)) != NULL) {
+	printf("\tElement in drive\n");
+		printf("%s:%s\n",drive->dirname, path);
+		int index = get_drive_index(path);
+		json_t* file = json_array_get(drive->FileList, index);
+		st->st_mode = S_IFREG | 0644; //Check back for different file types
+		st->st_nlink = 1;
+
+		json_t* size = json_object_get(file, "Size");
+		if (size != NULL) st->st_size = (int) json_integer_value(size);
+		else st->st_size = 1024;
+
+			st->st_uid = getuid(); // The owner of the file/directory is the user who mounted the filesystem
+	st->st_gid = getgid(); // The group of the file/directory is the same as the group of the user who mounted the filesystem
+	st->st_atime = time( NULL ); // The last "a"ccess of the file/directory is right now
+	st->st_mtime = time( NULL ); // The last "m"odification of the file/directory is right now
 		//@alowe Here is where we want API call
-		char formatted_command[500];
+		/*char formatted_command[500];
 		sprintf(&formatted_command[0], "%s %s", "echo \"{\\\"command\\\":\\\"get_attributes\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ", Drives[get_drive_index((char*) path)].exec_path);
 		printf("\tCommand: %s\n", &formatted_command[0]);
-		//Here is where we would popen the formatted command 
+		//Here is where we would popen the formatted command */
+	return 0;
 		
 	}
 	
@@ -129,21 +277,13 @@ static int do_getattr( const char *path, struct stat *st )
 	return 0;
 }
 
-/*
-* passing in a json object, function returns a string value representation of 
-file name.
-If json object is a json string -  dump object to string
-If json object is not a string - check object for a filename 
-*/
-const char* getJsonFileName(json_t* file){
-	if (json_is_string(file) ){
-		return  json_string_value(file);
-	}
-	else{
-		//To-do implement json object (kv pairs) to get file name
-		return json_dumps(file, 0);
-	}
-}
+
+
+
+
+
+
+
 
 // "filler": https://www.cs.nmsu.edu/~pfeiffer/fuse-tutorial/html/unclear.html
 static int do_readdir( const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi )
@@ -166,7 +306,7 @@ static int do_readdir( const char *path, void *buffer, fuse_fill_dir_t filler, o
 			filler( buffer, fileName, NULL, 0 );
 			}
 			else{
-				printf("NULL");
+				printf("Could not find name");
 			}
 		}
 		
@@ -185,6 +325,10 @@ static int do_readdir( const char *path, void *buffer, fuse_fill_dir_t filler, o
 	
 	return 0;
 }
+
+
+
+
 
 static int do_read( const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi )
 {
@@ -210,106 +354,22 @@ static int do_read( const char *path, char *buffer, size_t size, off_t offset, s
 	return strlen( selectedText ) - offset;
 }
 
-static struct fuse_operations operations = {
-    .getattr	= do_getattr,
-    .readdir	= do_readdir,
-   // .read		= do_read,
-};
-
-int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char * cmd) {
-  FILE *fp;
-  char path[LINE_MAX_BUFFER_SIZE];
-  /* Open the command for reading. */
-  
-  //Format command as a list query for root directory
-  char formatted_command[500];
-  sprintf(&formatted_command[0], "%s %s", "echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ", cmd);
-  fp = popen(&formatted_command[0], "r");
-  if (fp == NULL) {
-    return -1;
-  }
- 
-  int cnt = 0;
-  while (fgets(path, sizeof(path), fp) != NULL) {
-    strcpy(lines[cnt++], path);
-  }
-  pclose(fp);
-  return cnt;  
-}
-
-int update_drive(int i) {
-	printf("Generating FileList for %s\n", Drives[i].dirname);
-	char execOutput[100][LINE_MAX_BUFFER_SIZE];
-	int a = myGetFileList(execOutput, Drives[i].exec_path);
-	
-	json_t* fileListAsArray ;
-	
-
-	if (a < 1){
-		printf("file list getter was not executed properly or output was empty\n");
-		return -1;	
-	}
-
-
-	int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
-
-	if (arraySize < 1){
-		return arraySize;
-	}
-	Drives[i].FileList = json_deep_copy(fileListAsArray);
-	Drives[i].num_files = arraySize;
-	printf("iteration complete\n");
-}
-
-int populate_filelists() {
-	for (int i = 0; i < NUM_DRIVES; i++) {
-		update_drive(i);
-	}
-}
 
 
 
-/*
-* main calls getFileList, if successful main sets global variables and starts fuse_main
-*
-*/
-int main( int argc, char *argv[] )
-{
-	//char execOutput[100][LINE_MAX_BUFFER_SIZE];
-	//int a = getFileList(execOutput);
-	json_t* fileListAsArray ;
-	populate_filelists();
-
-	//if (a < 1){
-		//printf("file list getter was not executed properly or output was empty\n");
-		//return -1;	
-	 //}
-
-   
-	//int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
-	
-	//if (arraySize < 1){
-		//return arraySize;
-	//}
-	//FileList = json_deep_copy(fileListAsArray);
-	//SizeOfFileList = arraySize;
-
-	return fuse_main( argc, argv, &operations, NULL );
-
-}
 
 /**
  * Runs an executable (currently ./getFile but can be replaced by any shell command with its path)
  * Input: char list to output command results to
  * Output: Number of lines found in executable output
  * 	-1 -> executable failed to run or was not found.
- **/
+ *
 int getFileList(char lines[][LINE_MAX_BUFFER_SIZE]) {
   FILE *fp;
   char path[LINE_MAX_BUFFER_SIZE];
 	//char* cmd = "./getFile";
   char * cmd = Drives[0].exec_path;
-  /* Open the command for reading. */
+  
   fp = popen(cmd, "r");
   if (fp == NULL) {
     return -1;
@@ -324,40 +384,4 @@ int getFileList(char lines[][LINE_MAX_BUFFER_SIZE]) {
   pclose(fp);
   return cnt;  
 }
-
-/**
- * Gets a string array and returns a json array.
- * Input: json_t** json object to be modified
- * char string array
- * int number of lines in the string array
- * 
- * Return: <1 error occurred in parsing or no array items were found
- * 
- * >=1 number of items in json array.
- * 
- **/
-int parseJsonString(json_t** fileListAsJson, char stringArray[][LINE_MAX_BUFFER_SIZE], int numberOfLines){
-
-	char* fileListAsString = calloc((numberOfLines * LINE_MAX_BUFFER_SIZE) +1, sizeof(char));
-	for( int i = 0; i < numberOfLines; i++){
-		printf("%s",stringArray[i]);
-		fileListAsString = strncat(fileListAsString, stringArray[0], strlen(stringArray[0]));
-	}
-
-	printf("%s",fileListAsString);
-	json_error_t* errorCheck = NULL;
-	*fileListAsJson = json_loads(fileListAsString, 0, errorCheck);
-
-	if (errorCheck != NULL){
-		printf("Json encoding error: %s", errorCheck->text);
-		return -1;
-	}
-
-	if ( !json_is_array(*fileListAsJson)){
-		printf("Json was not of type array");
-		return -2;
-	}
-
-
-	return json_array_size(*fileListAsJson);
-}
+**/

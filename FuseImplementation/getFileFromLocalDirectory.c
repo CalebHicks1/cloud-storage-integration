@@ -4,6 +4,10 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include <unistd.h>
+#include <sys/types.h>
+#include <string.h>
+#include <stdlib.h>
 int main(void)
 {
 	struct dirent *de; // Pointer for directory entry
@@ -21,8 +25,22 @@ int main(void)
 	// for readdir()
     json_t* file_name_array = json_array();
 	while ((de = readdir(dr)) != NULL){
-        if (de->d_type == DT_REG)
-            json_array_append(file_name_array,json_string(de->d_name));
+        //if (de->d_type == DT_REG){
+			//add error check
+			json_t* obj = json_object();
+			if (obj != NULL){
+				json_object_set(obj, "Name", json_string(de->d_name));
+				json_object_set(obj, "Size", json_integer(de->d_reclen));
+				if (de->d_type == DT_DIR){
+					json_object_set(obj, "IsDir", json_string("true"));
+				}
+				else{
+					json_object_set(obj, "IsDir", json_string("false"));
+				}
+            	json_array_append(file_name_array, obj);
+			}
+
+		//}
     }
 	
 
