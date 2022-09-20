@@ -37,9 +37,9 @@ const char* getJsonFileName(json_t* file){
  * >=1 number of items in json array.
  * 
  **/
-int parseJsonString(json_t** fileListAsJson, char stringArray[][255], int numberOfLines){
+int parseJsonString(json_t** fileListAsJson, char stringArray[][1024], int numberOfLines){
 
-	char* fileListAsString = calloc((numberOfLines * 255) +1, sizeof(char));
+	char* fileListAsString = calloc((numberOfLines * 1024) +1, sizeof(char));
 	for( int i = 0; i < numberOfLines; i++){
 		fileListAsString = strncat(fileListAsString, stringArray[0], strlen(stringArray[0]));
 	}

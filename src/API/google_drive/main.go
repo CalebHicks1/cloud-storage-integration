@@ -153,8 +153,8 @@ func main() {
 				response += `{"Name":"`
 				response += f.Name + `"`
 				response += `, "`
-				response += `{"Size":"`
-				response += strconv.FormatInt(f.Size, 10) + `"`
+				response += `"Size":"`
+				response += strconv.FormatInt(f.Size, 10) + `"}`
 				response += `, "`
 				log.Println(f.Name)
 			}

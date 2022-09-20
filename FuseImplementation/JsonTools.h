@@ -11,6 +11,6 @@
 #include <sys/stat.h>
 const char* getJsonFileName(json_t* file);
 
-int parseJsonString(json_t** fileListAsArray, char stringArray[][255], int numberOfLines);
+int parseJsonString(json_t** fileListAsArray, char stringArray[][1024], int numberOfLines);
 
 #endif

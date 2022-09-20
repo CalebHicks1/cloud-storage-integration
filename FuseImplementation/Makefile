@@ -4,10 +4,10 @@ JANSSON = "./jansson-2.13/"
 
 
 build: $(FILESYSTEM_FILES)
-	$(COMPILER) $(FILESYSTEM_FILES) -o fuse -D_FILE_OFFSET_BITS=64 -ggdb3 `pkg-config fuse --cflags --libs` -ljansson
+	$(COMPILER) $(FILESYSTEM_FILES) -o fuse -D_FILE_OFFSET_BITS=64  `pkg-config fuse --cflags --libs` -ljansson
 	echo 'To Mount: ./fuse -f [mount point]'
 
-	$(COMPILER) getFileFromLocalDirectory.c -o getFile -ljansson
+	$(COMPILER) getFileFromLocalDirectory.c -o getFile -ljansson -ggdb3
 
 
 getFile: getFileFromLocalDirectory.c
