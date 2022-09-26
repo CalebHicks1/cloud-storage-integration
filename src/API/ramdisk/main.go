@@ -119,7 +119,7 @@ func listen() {
 	shutdown := false
 	for !shutdown {
 		// https://stackoverflow.com/questions/20895552/how-can-i-read-from-standard-input-in-the-console
-		input, err := reader.ReadString('\n')
+		input, err := reader.ReadString('?')
 
 		if err != nil {
 			fatal(err)

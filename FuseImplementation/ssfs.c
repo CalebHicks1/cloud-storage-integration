@@ -58,7 +58,8 @@ struct Drive_Object Drives[NUM_DRIVES] =
 		// ie., they will echo a json object into executable's stdin, and expect a json object returned in its stdout
 		{"Google_Drive", NULL, -1, "../src/API/google_drive/./google_drive_client" /*quickstart*/, 0}, 
 
-		{"NFS", NULL, -1, "sudo ../src/API/NFS/nfs_api", 0}
+		{"NFS", NULL, -1, "sudo ../src/API/NFS/nfs_api", 0},
+		{"Ramdisk", NULL, -1, "../src/API/ramdisk/ramdisk_client", 0}
 		};
 
 /**********************************************************/
