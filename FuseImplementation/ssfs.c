@@ -32,6 +32,7 @@ int update_drive(int i);
 static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
 static int do_getattr(const char *path, struct stat *st);
 
+
 /*Logging ********************************************************/
 //Call me like you would printf
 void fuse_log(char * fmt, ...);
@@ -220,19 +221,29 @@ int get_drive_index(const char *path)
 	return -1;
 }
 
+/**
+ * /<GoogleDrive, NFS, etc>/filename -> filename
+ */
+char * parse_out_drive_name(char * path) {
+	char * ret = path + 1;
+	while (*ret != '\0' && *ret != '/') {
+		ret++;
+	}
+	return (++ret);
+}
+
 int get_file_index(const char *path, int driveIndex)
 {
-
+	char * cut_path = parse_out_drive_name((char*) path);
 	for (size_t index = 0; index < Drives[driveIndex].num_files; index++)
 	{
 		const char *fileName = getJsonFileName(json_array_get(Drives[driveIndex].FileList, index));
-
-		if (strstr(path + 1, fileName) != 0)
+		if (strcmp(cut_path, fileName) == 0)
 		{
-			fuse_log("%s, %s\n", path + 1, fileName);
 			return index;
 		}
 	}
+	fuse_log_error("Could not find index for %s\n", path);
 	return -1;
 }
 
