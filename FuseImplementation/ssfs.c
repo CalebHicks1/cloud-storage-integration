@@ -55,6 +55,13 @@ static struct fuse_operations operations = {
 };
 
 /*Global varibales and structs ***********************************/
+struct Sub_Directory
+{
+	char dirname[200];
+	json_t *FileList;
+	int num_files;
+};
+typedef struct Sub_Directory Sub_Directory;
 struct Drive_Object
 {
 	char dirname[200];
@@ -62,17 +69,19 @@ struct Drive_Object
 	int fd;
 	char exec_path[200];
 	int num_files;
+	Sub_Directory sub_directories[20];
+	int num_sub_directories;
 };
 typedef struct Drive_Object Drive_Object;
 //"echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ../src/API/google_drive/quickstart"
 #define NUM_DRIVES 2
 struct Drive_Object Drives[NUM_DRIVES] =
 	{
-		{"Test_Dir", NULL, -1, "./getFile", 0},
+		{"Test_Dir", NULL, -1, "./getFile", 0, {}, 0},
 		// Just have the name of the executable
 		// Functions will assume executable has the same API format as the google drive one
 		// ie., they will echo a json object into executable's stdin, and expect a json object returned in its stdout
-		{"Google_Drive", NULL, -1, "../src/API/google_drive/./google_drive_client" /*quickstart*/, 0}//,
+		{"Google_Drive", NULL, -1, "../src/API/google_drive/./google_drive_client" /*quickstart*/, 0, {}, 0}//,
 
 		//{"NFS", NULL, -1, "sudo ../src/API/NFS/nfs_api", 0}
 		};
