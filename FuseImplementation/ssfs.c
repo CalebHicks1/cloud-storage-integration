@@ -75,16 +75,16 @@ struct Drive_Object
 };
 typedef struct Drive_Object Drive_Object;
 //"echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ../src/API/google_drive/quickstart"
-#define NUM_DRIVES 3
+#define NUM_DRIVES 2
 struct Drive_Object Drives[NUM_DRIVES] =
 	{
 		{"Test_Dir", NULL, -1, "./getFile", 0},
 		// Just have the name of the executable
 		// Functions will assume executable has the same API format as the google drive one
 		// ie., they will echo a json object into executable's stdin, and expect a json object returned in its stdout
-		{"Google_Drive", NULL, -1, "../src/API/google_drive/./google_drive_client" /*quickstart*/, 0},
+		{"Google_Drive", NULL, -1, "../src/API/google_drive/./google_drive_client" /*quickstart*/, 0}//,
 
-		{"NFS", NULL, -1, "sudo ../src/API/NFS/nfs_api", 0}
+		//{"NFS", NULL, -1, "sudo ../src/API/NFS/nfs_api", 0}
 		};
 
 /**********************************************************/
@@ -229,6 +229,7 @@ int get_file_index(const char *path, int driveIndex)
 
 		if (strstr(path + 1, fileName) != 0)
 		{
+			fuse_log("%s, %s\n", path + 1, fileName);
 			return index;
 		}
 	}
@@ -267,7 +268,19 @@ static int do_getattr(const char *path, struct stat *st)
 		int index = get_file_index(path, drive);
 		// printf("FIle Index: %d\n", index);
 		json_t *file = json_array_get(Drives[drive].FileList, index);
-		st->st_mode = S_IFREG | 0644; // Check back for different file types
+		json_t *isDir = json_object_get(file, "IsDir");
+		if (isDir != NULL) {
+			if (json_is_true(isDir)) {
+				st->st_mode = S_IFDIR | 0755;
+			}
+			else {
+				st->st_mode = S_IFREG | 0644;
+			}
+		}
+		else {
+			fuse_log_error("IsDir field was not present for %s\n", path);
+		}
+		 // Check back for different file types
 		st->st_nlink = 1;
 
 		json_t *size = json_object_get(file, "Size");
