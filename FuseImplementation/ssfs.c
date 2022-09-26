@@ -32,6 +32,31 @@ int update_drive(int i);
 static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
 static int do_getattr(const char *path, struct stat *st);
 
+/*Logging ********************************************************/
+//Call me like you would printf
+void fuse_log(char * fmt, ...);
+void __fuse_log(const char* caller_name, char * fmt, ...);
+void fuse_log_error(char * fmt, ...);
+#define fuse_log(...) __fuse_log(__func__, __VA_ARGS__)
+#define fuse_log_error(...) __fuse_log_error(__func__, 	__VA_ARGS__)
+//see: https://stackoverflow.com/questions/16100090/how-can-we-know-the-caller-functions-name
+
+/*Logging ********************************************************/
+
+void __fuse_log(const char* caller_name, char * fmt, ...) {
+	printf("[%s] ", caller_name);
+	va_list arguments;
+	va_start(arguments, fmt);
+	vprintf(fmt, arguments);
+}
+
+void __fuse_log_error(const char* caller_name, char * fmt, ...) {
+	printf("---------> [%s] ", caller_name);
+	va_list arguments;
+	va_start(arguments, fmt);
+	vprintf(fmt, arguments);
+}
+
 static struct fuse_operations operations = {
 	.getattr = do_getattr,
 	.readdir = do_readdir,
@@ -71,7 +96,8 @@ struct Drive_Object Drives[NUM_DRIVES] =
  */
 int main(int argc, char *argv[])
 {
-
+	fuse_log("normal log %s\n", "message");
+	fuse_log_error("error %s\n", "message");
 	// json_t* fileListAsArray ;
 	populate_filelists();
 
@@ -364,6 +390,7 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 
 	return strlen(selectedText) - offset;
 }
+
 
 /**
  * Runs an executable (currently ./getFile but can be replaced by any shell command with its path)
