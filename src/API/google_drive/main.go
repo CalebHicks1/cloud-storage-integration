@@ -106,6 +106,7 @@ func main() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Issue reading\n%s", err)
 			cmd.Type = "shutdown"
+			log.Fatalf("Terminating\n");
 		}
 
 		// parse JSON into struct
