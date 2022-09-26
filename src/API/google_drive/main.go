@@ -102,11 +102,16 @@ func main() {
 		cmd, response := types.Command{}, types.Response{ErrCode: 0, Files: nil}
 
 		// read and check if pipe has been closed
-		line, err := reader.ReadString('\n')
+		line, err := reader.ReadString('?')
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Issue reading\n%s", err)
 			cmd.Type = "shutdown"
 			log.Fatalf("Terminating\n");
+		}
+
+		// strip trailing ? char
+		if last := len(line) - 1; last >= 0 && line[last] == '?' {
+			line = line[:last]
 		}
 
 		// parse JSON into struct

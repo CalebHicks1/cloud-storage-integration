@@ -24,9 +24,13 @@ func main() {
 	read_loop := true
 
 	for read_loop {
-		text, err := reader.ReadString('\n')
+		text, err := reader.ReadString('?')
 		if err != nil {
 			fmt.Println("Error: ", err)
+		}
+		// trim last ? from input
+		if last := len(text) - 1; last >= 0 && text[last] == '?' {
+			text = text[:last]
 		}
 		// parse command
 		parseJsonInput(text, mountPath)
@@ -96,7 +100,6 @@ func parseJsonInput(text string, mountPath string) {
 	default:
 		response = "{\"error\": \"command not implemented\"}"
 	}
-
 	fmt.Println(response)
 }
 
