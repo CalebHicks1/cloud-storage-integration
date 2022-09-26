@@ -37,6 +37,7 @@ static int do_getattr(const char *path, struct stat *st);
 //Call me like you would printf
 void fuse_log(char * fmt, ...);
 void __fuse_log(const char* caller_name, char * fmt, ...);
+void __fuse_log_error(const char* caller_name, char * fmt, ...);
 void fuse_log_error(char * fmt, ...);
 void initialize_log(char * log_name);
 char * error_log_filename = "errors.txt";
@@ -363,8 +364,7 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 
 		return 0;
 	}
-
-	if (strcmp(path, "/") == 0) // If the user is trying to show the files/directories of the root directory show the following
+	else if (strcmp(path, "/") == 0) // If the user is trying to show the files/directories of the root directory show the following
 	{
 
 		// We want to list our drives
@@ -373,6 +373,10 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 			filler(buffer, Drives[i].dirname, NULL, 0);
 		}
 	}
+	else {	//Then this *should* be a subdirectory
+		fuse_log_error("This should be a subdirectory: %s\n", path);
+	}
+	
 
 	return 0;
 }
