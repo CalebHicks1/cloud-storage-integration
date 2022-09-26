@@ -44,6 +44,7 @@ void fuse_log_error(char * fmt, ...);
 /*Logging ********************************************************/
 
 void __fuse_log(const char* caller_name, char * fmt, ...) {
+	//We can add logging to a file here if/when we want to do that
 	printf("[%s] ", caller_name);
 	va_list arguments;
 	va_start(arguments, fmt);
@@ -96,8 +97,6 @@ struct Drive_Object Drives[NUM_DRIVES] =
  */
 int main(int argc, char *argv[])
 {
-	fuse_log("normal log %s\n", "message");
-	fuse_log_error("error %s\n", "message");
 	// json_t* fileListAsArray ;
 	populate_filelists();
 
@@ -126,7 +125,7 @@ int populate_filelists()
  */
 int update_drive(int i)
 {
-	printf("Generating FileList for %s\n", Drives[i].dirname);
+	fuse_log("Generating FileList for %s\n", Drives[i].dirname);
 	char execOutput[100][LINE_MAX_BUFFER_SIZE];
 	int a = myGetFileList(execOutput, Drives[i].exec_path);
 
@@ -134,7 +133,7 @@ int update_drive(int i)
 
 	if (a < 1)
 	{
-		printf("file list getter was not executed properly or output was empty\n");
+		fuse_log_error("file list getter was not executed properly or output was empty\n");
 		return 0;
 	}
 
@@ -146,7 +145,6 @@ int update_drive(int i)
 	}
 	Drives[i].FileList = json_deep_copy(fileListAsArray);
 	Drives[i].num_files = arraySize;
-	printf("iteration complete\n");
 	return 1;
 }
 
@@ -167,7 +165,7 @@ int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd)
 	fp = popen(&formatted_command[0], "r");
 	if (fp == NULL)
 	{
-		printf("Could not run command");
+		fuse_log_error("Could not run command");
 		return -1;
 	}
 
@@ -253,19 +251,18 @@ int get_file_index(const char *path, int driveIndex)
 
 static int do_getattr(const char *path, struct stat *st)
 {
-	printf("[getattr] Called\n");
-	printf("\tAttributes of %s requested\n", path);
+	fuse_log("\tAttributes of %s requested\n", path);
 	int drive;
 	if (is_drive(path) == 0)
 	{
-		printf("Drive found\n");
+		fuse_log("Drive found\n");
 		st->st_mode = S_IFDIR | 0755;
 		st->st_nlink = 2; // Why "two" hardlinks instead of "one"? The answer is here: http://unix.stackexchange.com/a/101536
 		return 0;
 	}
 	else if ((drive = get_drive_index(path)) != -1)
 	{
-		printf("\tElement in drive\n");
+		fuse_log("\tElement in drive\n");
 
 		int index = get_file_index(path, drive);
 		// printf("FIle Index: %d\n", index);
@@ -324,7 +321,7 @@ static int do_getattr(const char *path, struct stat *st)
 // "filler": https://www.cs.nmsu.edu/~pfeiffer/fuse-tutorial/html/unclear.html
 static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi)
 {
-	printf("--> Getting The List of Files of %s\n", path);
+	fuse_log("--> Getting The List of Files of %s\n", path);
 
 	filler(buffer, ".", NULL, 0);  // Current Directory
 	filler(buffer, "..", NULL, 0); // Parent Directory
@@ -333,7 +330,7 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 		int index = get_drive_index((char *)path);
 		if (index < 0)
 		{
-			printf("Error in get_drive_index\n");
+			fuse_log_error("Error in get_drive_index\n");
 			return -1;
 		}
 		Drive_Object currDrive = Drives[index];
@@ -347,7 +344,7 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 			}
 			else
 			{
-				printf("Could not find name");
+				fuse_log_error("Could not find name");
 			}
 		}
 
