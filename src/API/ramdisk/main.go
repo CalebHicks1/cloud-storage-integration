@@ -121,9 +121,12 @@ func listen() {
 		// https://stackoverflow.com/questions/20895552/how-can-i-read-from-standard-input-in-the-console
 		input, err := reader.ReadString('?')
 
-		if err != nil {
+		if err != nil || len(input) < 1 {
 			fatal(err)
 		}
+
+		// Trim the delimiter
+		input = input[:len(input)-1]
 
 		shutdown = processInput(input)
 	}
@@ -155,9 +158,10 @@ func processInput(input string) bool {
 		}
 	}
 
-	if response.Files != nil || response.ErrCode != types.NO_ERROR {
-		fmt.Println(response)
-	}
+	fmt.Println(response.String())
+	// if response.Files != nil || response.ErrCode != types.NO_ERROR {
+	// 	fmt.Println(response)
+	// }
 
 	return shutdown
 }
