@@ -277,10 +277,27 @@ static int do_getattr(const char *path, struct stat *st)
 
 		int index = get_file_index(path, drive);
 		printf("FIle Index: %d\n", index);
+		json_t * file;
 		if (index < 0) {
 			//Might be in a subdirectory
+			for (int subdir_index = 0; subdir_index < Drives[drive].num_sub_directories; subdir_index++) {
+				Sub_Directory currDir = Drives[drive].sub_directories[subdir_index];
+				fuse_log("subdirectory name: %s\n", currDir.dirname);
+				for (int entry_index = 0; entry_index < currDir.num_files; entry_index++) {
+					char * filename = getJsonFileName(json_array_get(currDir.FileList, entry_index));
+					if (strstr(path, filename) != NULL) {
+						file = json_array_get(currDir.FileList, entry_index);
+					}
+				}
+			}
+			if (file == NULL) {
+				fuse_log_error("Oh no\n");
+			}
 		}
-		json_t *file = json_array_get(Drives[drive].FileList, index);
+		else {
+			file = json_array_get(Drives[drive].FileList, index);
+		}
+		
 		json_t *isDir = json_object_get(file, "IsDir");
 		if (isDir != NULL) {
 			if (json_is_true(isDir)) {
