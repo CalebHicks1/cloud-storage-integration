@@ -74,16 +74,16 @@ struct Drive_Object
 };
 typedef struct Drive_Object Drive_Object;
 //"echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ../src/API/google_drive/quickstart"
-#define NUM_DRIVES 2
+#define NUM_DRIVES 3
 struct Drive_Object Drives[NUM_DRIVES] =
 	{
 		{"Test_Dir", NULL, -1, "./getFile", 0, {}, 0},
 		// Just have the name of the executable
 		// Functions will assume executable has the same API format as the google drive one
 		// ie., they will echo a json object into executable's stdin, and expect a json object returned in its stdout
-		{"Google_Drive", NULL, -1, "../src/API/google_drive/./google_drive_client" /*quickstart*/, 0, {}, 0}//,
+		{"Google_Drive", NULL, -1, "../src/API/google_drive/./google_drive_client" /*quickstart*/, 0, {}, 0},//,
 
-		//{"NFS", NULL, -1, "sudo ../src/API/NFS/nfs_api", 0}
+		{"NFS", NULL, -1, "sudo ../src/API/NFS/nfs_api", 0}
 		};
 
 /**********************************************************/
