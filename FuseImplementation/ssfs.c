@@ -21,10 +21,12 @@
 #include <jansson.h>
 #include <sys/stat.h>
 #include "JsonTools.h"
+#include "logging.h"
 
 /*Function definitions *******************************************/
 int is_drive(const char *path);
 struct Drive_Object *get_drive(const char *path);
+int __myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char * optional_path);
 int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd);
 int get_drive_index(const char *path);
 int populate_filelists();
@@ -33,17 +35,7 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 static int do_getattr(const char *path, struct stat *st);
 
 
-/*Logging ********************************************************/
-//Call me like you would printf
-void fuse_log(char * fmt, ...);
-void __fuse_log(const char* caller_name, char * fmt, ...);
-void __fuse_log_error(const char* caller_name, char * fmt, ...);
-void fuse_log_error(char * fmt, ...);
-void initialize_log(char * log_name);
-char * error_log_filename = "errors.txt";
-#define fuse_log(...) __fuse_log(__func__, __VA_ARGS__)
-#define fuse_log_error(...) __fuse_log_error(__func__, 	__VA_ARGS__)
-//see: https://stackoverflow.com/questions/16100090/how-can-we-know-the-caller-functions-name
+
 
 
 
@@ -287,7 +279,7 @@ static int do_getattr(const char *path, struct stat *st)
 				Sub_Directory currDir = Drives[drive].sub_directories[subdir_index];
 				fuse_log("subdirectory name: %s\n", currDir.dirname);
 				for (int entry_index = 0; entry_index < currDir.num_files; entry_index++) {
-					char * filename = getJsonFileName(json_array_get(currDir.FileList, entry_index));
+					char * filename = (char*) getJsonFileName(json_array_get(currDir.FileList, entry_index));
 					if (strstr(path, filename) != NULL) {
 						file = json_array_get(currDir.FileList, entry_index);
 					}
@@ -426,6 +418,8 @@ int listAsArray(json_t** list, int i, char * optional_path) {
 	
 }
 
+
+/*Subdirectories *************************************************/
 int get_subdirectory_contents(json_t ** list, int drive_index,  char *path) {
 	fuse_log("Generating filelist for subdirectory %s\n", path);
 	return listAsArray(list, drive_index, path);
@@ -534,7 +528,7 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 		else {
 			fuse_log_error("Subdirectory not generated\n");
 		}
-		printf("hi\n");
+		
 	}
 	
 
@@ -565,46 +559,7 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 	return strlen(selectedText) - offset;
 }
 
-/*Logging ********************************************************/
 
-/**
- * Reset the file and note the date and time
- */
-void initialize_log(char * log_name) {
-	FILE * log = fopen(error_log_filename, "w");
-	//https://stackoverflow.com/questions/1442116/how-to-get-the-date-and-time-values-in-a-c-program
-	time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-    fprintf(log, "Generated at: %d-%02d-%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-	fclose(log);
-}
-
-
-void __fuse_log(const char* caller_name, char * fmt, ...) {
-	//We can add logging to a file here if/when we want to do that
-	printf("[%s] ", caller_name);
-	va_list arguments;
-	va_start(arguments, fmt);
-	vprintf(fmt, arguments);
-}
-
-void __fuse_log_error(const char* caller_name, char * fmt, ...) {
-	//Can clean this up later
-	FILE * error_log = fopen(error_log_filename, "a");
-	if (error_log == NULL) {
-		perror("Failed to open error log file\n");
-		return;
-	}
-	printf("---------> [%s] ", caller_name);
-	fprintf(error_log, "---------> [%s] ", caller_name);
-	va_list arguments;
-	va_start(arguments, fmt);
-	vprintf(fmt, arguments);
-	va_end(arguments);
-	va_start(arguments, fmt);
-	vfprintf(error_log, fmt, arguments);
-	fclose(error_log);
-}
 
 /**
  * Runs an executable (currently ./getFile but can be replaced by any shell command with its path)
