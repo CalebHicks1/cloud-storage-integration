@@ -276,7 +276,10 @@ static int do_getattr(const char *path, struct stat *st)
 		fuse_log("\tElement in drive\n");
 
 		int index = get_file_index(path, drive);
-		// printf("FIle Index: %d\n", index);
+		printf("FIle Index: %d\n", index);
+		if (index < 0) {
+			//Might be in a subdirectory
+		}
 		json_t *file = json_array_get(Drives[drive].FileList, index);
 		json_t *isDir = json_object_get(file, "IsDir");
 		if (isDir != NULL) {
@@ -341,6 +344,118 @@ static int do_getattr(const char *path, struct stat *st)
 	return 0;
 }
 
+/**
+ *
+ * Calls an executable that gets a formatted output of file info
+ * If optional_path != NULL, retrieve list of files in subdirectory optional_path instead
+ */
+ //This can be used as a callback for myGetFileList to avoid redundant code
+int __myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char * optional_path)
+{
+	FILE *fp;
+	char path[LINE_MAX_BUFFER_SIZE];
+	/* Open the command for reading. */
+
+	// Format command as a list query for root directory
+	char formatted_command[500];
+	if (optional_path == NULL) {
+		sprintf(&formatted_command[0], "%s %s", "echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ", cmd);
+	}
+	else {
+		sprintf(&formatted_command[0], "echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"%s\\\",\\\"file\\\":\\\"\\\"}\" |  %s", optional_path, cmd);
+	}
+
+	fp = popen(&formatted_command[0], "r");
+	if (fp == NULL)
+	{
+		printf("Could not run command");
+		return -1;
+	}
+
+	int cnt = 0;
+	while (fgets(path, sizeof(path), fp) != NULL)
+	{
+		strcpy(lines[cnt++], path);
+	}
+	pclose(fp);
+	return cnt;
+}
+
+/**
+ * Assign *list to be list of files corresponding to Drives[i], returning # of files. 
+ * If optional_path != NULL, get list of files at the subdirectory optional_path instead
+ */
+int listAsArray(json_t** list, int i, char * optional_path) {
+	char execOutput[100][LINE_MAX_BUFFER_SIZE];
+	int a = __myGetFileList(execOutput, Drives[i].exec_path, optional_path);
+
+	json_t *fileListAsArray;
+
+	if (a < 1)
+	{
+		printf("file list getter was not executed properly or output was empty\n");
+		return 0;
+	}
+
+	int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
+
+	if (arraySize < 1)
+	{
+		return 0;
+	}
+	*list = fileListAsArray;
+	return arraySize;
+	
+}
+
+int get_subdirectory_contents(json_t ** list, int drive_index,  char *path) {
+	fuse_log("Generating filelist for subdirectory %s\n", path);
+	return listAsArray(list, drive_index, path);
+}
+
+/**
+ * If subdirectory exists, return it. If not, generate it, and add it 
+ * to the list of the Drive's subdirectories
+ */
+Sub_Directory * handle_subdirectory(char * path) {
+	fuse_log_error("Called for %s\n", path);
+	int drive_index = get_drive_index(path);
+	
+	if (drive_index < 0) {
+		fuse_log_error("Drive not found for subdirectory %s\n", path);
+		return NULL;
+	}
+	
+	for (int i = 0; i < Drives[drive_index].num_sub_directories; i++) {
+		if (strcmp(Drives[drive_index].sub_directories[i].dirname, path) == 0) {
+			fuse_log("Found subdirectory\n");
+			return &Drives[drive_index].sub_directories[i];
+		}
+	}
+	//Generate the subdirectory
+	fuse_log("Need to generate subdirectory...\n");
+	
+	char * relative_path = path + 1;
+	while (*relative_path != '\0' && *relative_path != '/') {
+		relative_path++;
+	}
+	if (*relative_path == '\0') {
+		fuse_log_error("Could not parse relative path for %s\n", path);
+		return NULL;
+	}
+	fuse_log("Relative path: %s\n", relative_path);
+	Sub_Directory * new_directory = &(Drives[drive_index].sub_directories[Drives[drive_index].num_sub_directories]);
+	int num_files = get_subdirectory_contents(&(new_directory->FileList), drive_index, relative_path);
+	if (num_files < 0) {
+		fuse_log_error("Problem getting subdirectory contents\n");
+	}
+	new_directory->num_files = num_files;
+	sprintf(&(new_directory->dirname[0]), "%s", path);
+	Drives[drive_index].num_sub_directories++;
+	return new_directory;
+	
+}
+
 // "filler": https://www.cs.nmsu.edu/~pfeiffer/fuse-tutorial/html/unclear.html
 static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi)
 {
@@ -383,7 +498,25 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 		}
 	}
 	else {	//Then this *should* be a subdirectory
-		fuse_log_error("This should be a subdirectory: %s\n", path);
+		fuse_log("This should be a subdirectory: %s\n", path);
+		Sub_Directory * dir = handle_subdirectory((char*) path);
+		if (dir != NULL) {
+			for (size_t index = 0; index < dir->num_files; index++) {
+				const char *fileName = getJsonFileName(json_array_get(dir->FileList, index));
+				if (fileName != NULL)
+				{
+					filler(buffer, fileName, NULL, 0);
+				}
+				else
+				{
+					fuse_log_error("Could not find name");
+				}
+			}
+		}
+		else {
+			fuse_log_error("Subdirectory not generated\n");
+		}
+		printf("hi\n");
 	}
 	
 
