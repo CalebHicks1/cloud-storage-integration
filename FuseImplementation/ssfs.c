@@ -263,7 +263,7 @@ int get_file_index(const char *path, int driveIndex)
 static int do_getattr(const char *path, struct stat *st)
 {
 	fuse_log("\tAttributes of %s requested\n", path);
-	int drive;
+	
 	if (is_drive(path) == 0)
 	{
 		fuse_log("Drive found\n");
@@ -271,14 +271,17 @@ static int do_getattr(const char *path, struct stat *st)
 		st->st_nlink = 2; // Why "two" hardlinks instead of "one"? The answer is here: http://unix.stackexchange.com/a/101536
 		return 0;
 	}
-	else if ((drive = get_drive_index(path)) != -1)
+	 int drive = get_drive_index(path);
+	if (drive > -1)
 	{
 		fuse_log("\tElement in drive\n");
 
 		int index = get_file_index(path, drive);
-		printf("FIle Index: %d\n", index);
+		//printf("FIle Index: %d\n", index);
 		json_t * file;
+
 		if (index < 0) {
+			fuse_log("Checking subdirectory for file\n");
 			//Might be in a subdirectory
 			for (int subdir_index = 0; subdir_index < Drives[drive].num_sub_directories; subdir_index++) {
 				Sub_Directory currDir = Drives[drive].sub_directories[subdir_index];
@@ -291,7 +294,8 @@ static int do_getattr(const char *path, struct stat *st)
 				}
 			}
 			if (file == NULL) {
-				fuse_log_error("Oh no\n");
+				fuse_log_error("File not found in Subdirectory\n");
+				return -1;
 			}
 		}
 		else {
@@ -309,6 +313,7 @@ static int do_getattr(const char *path, struct stat *st)
 		}
 		else {
 			fuse_log_error("IsDir field was not present for %s\n", path);
+			return -1;
 		}
 		 // Check back for different file types
 		st->st_nlink = 1;
@@ -323,11 +328,7 @@ static int do_getattr(const char *path, struct stat *st)
 		st->st_gid = getgid();	   // The group of the file/directory is the same as the group of the user who mounted the filesystem
 		st->st_atime = time(NULL); // The last "a"ccess of the file/directory is right now
 		st->st_mtime = time(NULL); // The last "m"odification of the file/directory is right now
-								   //@alowe Here is where we want API call
-								   /*char formatted_command[500];
-								   sprintf(&formatted_command[0], "%s %s", "echo \"{\\\"command\\\":\\\"get_attributes\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ", Drives[get_drive_index((char*) path)].exec_path);
-								   printf("\tCommand: %s\n", &formatted_command[0]);
-								   //Here is where we would popen the formatted command */
+								  
 		return 0;
 	}
 
