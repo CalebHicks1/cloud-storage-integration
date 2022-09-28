@@ -8,7 +8,7 @@
 #include "logging.h"
 char * error_log_filename = "errors.txt";
 /**
- * Reset the file and note the date and time
+ * Reset the file for __fuse_log_error and note the date and time
  */
 void initialize_log(void) {
 	FILE * log = fopen(error_log_filename, "w");
@@ -19,7 +19,9 @@ void initialize_log(void) {
 	fclose(log);
 }
 
-
+/**
+ * Callback for fuse_log macro
+ */
 void __fuse_log(const char* caller_name, char * fmt, ...) {
 	//We can add logging to a file here if/when we want to do that
 	printf("[%s] ", caller_name);
@@ -28,6 +30,10 @@ void __fuse_log(const char* caller_name, char * fmt, ...) {
 	vprintf(fmt, arguments);
 }
 
+/**
+ * Callback for fuse_log_error macro
+ * Writes to stdout and to error_log_filename
+ */
 void __fuse_log_error(const char* caller_name, char * fmt, ...) {
 	//Can clean this up later
 	FILE * error_log = fopen(error_log_filename, "a");
