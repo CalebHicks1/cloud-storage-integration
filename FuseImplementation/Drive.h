@@ -33,7 +33,7 @@ struct Drive_Object
 };
 typedef struct Drive_Object Drive_Object;
 
-#define NUM_DRIVES 3
+#define NUM_DRIVES 2
 #define LINE_MAX_BUFFER_SIZE 1024
 
 //Important Setup methods

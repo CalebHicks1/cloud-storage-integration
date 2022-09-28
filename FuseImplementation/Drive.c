@@ -1,6 +1,7 @@
 #include "Drive.h"
 #include "logging.h"
-#include "ssfs.h"
+//#include "ssfs.h"
+#include "api.h"
 extern Drive_Object Drives[NUM_DRIVES];
 
 /**
@@ -59,32 +60,33 @@ int populate_filelists()
  */
 int __myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char * optional_path)
 {
-	FILE *fp;
-	char path[LINE_MAX_BUFFER_SIZE];
-	/* Open the command for reading. */
+
+	int out; // fd to read from executable
+	int in; // fd to write to executable
+
+	// launch executable
+	fuse_log("running module at %s\n", cmd);
+	spawn_module(&in,&out,cmd);
 
 	// Format command as a list query for root directory
-	char formatted_command[500];
 	if (optional_path == NULL) {
-		sprintf(&formatted_command[0], "%s %s", "echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"\\\",\\\"file\\\":\\\"\\\"}\" | ", cmd);
+		dprintf(in, "{\"command\":\"list\", \"path\":\"/\", \"file\":\"example\"}\n");
 	}
 	else {
-		sprintf(&formatted_command[0], "echo \"{\\\"command\\\":\\\"list\\\",\\\"path\\\":\\\"%s\\\",\\\"file\\\":\\\"\\\"}\" |  %s", optional_path, cmd);
+		dprintf(in, "{\"command\":\"list\", \"path\":\"%s\", \"file\":\"example\"}\n",optional_path);
 	}
 
-	fp = popen(&formatted_command[0], "r");
-	if (fp == NULL)
-	{
-		printf("Could not run command");
-		return -1;
-	}
-
+	// read last line from executable
 	int cnt = 0;
-	while (fgets(path, sizeof(path), fp) != NULL)
-	{
-		strcpy(lines[cnt++], path);
-	}
-	pclose(fp);
+	ssize_t read_size = read(out, lines[cnt++], LINE_MAX_BUFFER_SIZE);
+	
+	// shut down api
+	dprintf(in, "{\"command\":\"shutdown\"}\n");
+	
+	// we don't need these file descriptors anymore
+	close(out);
+	close(in);
+	
 	return cnt;
 }
 

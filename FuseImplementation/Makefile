@@ -1,5 +1,5 @@
 COMPILER = gcc
-FILESYSTEM_FILES = ssfs.c JsonTools.c JsonTools.h Drive.c logging.c
+FILESYSTEM_FILES = ssfs.c JsonTools.c JsonTools.h Drive.c logging.c api.c
 JANSSON = "./jansson-2.13/"
 
 
