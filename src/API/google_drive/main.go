@@ -20,6 +20,9 @@ import (
 
 // Starter OAuth 2.0 code from: https://developers.google.com/drive/api/quickstart/go
 
+// TODO: https://dev.to/douglasmakey/oauth2-example-with-go-3n8a
+// https://www.youtube.com/watch?v=OdyXIi6DGYw&ab_channel=AlexPliutau is better
+
 // Retrieve a token, saves the token, then returns the generated client.
 func getClient(config *oauth2.Config) *http.Client {
 	// The file token.json stores the user's access and refresh tokens, and is
@@ -99,6 +102,8 @@ func main() {
 	reader, servicing := bufio.NewReader(os.Stdin), true
 	for servicing {
 
+		//TODO: have functions return ErrorCode's so FUSE can know specific failure
+
 		cmd, response := types.Command{}, types.Response{ErrCode: 0, Files: nil}
 
 		// read and check if pipe has been closed
@@ -106,7 +111,7 @@ func main() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Issue reading\n%s", err)
 			cmd.Type = "shutdown"
-			log.Fatalf("Terminating\n");
+			log.Fatalf("Terminating\n")
 		}
 
 		// parse JSON into struct
@@ -132,14 +137,16 @@ func main() {
 			response.Files = files
 
 		case "upload":
-			// we want to uplaod the given file to the given path
-			res, err := UploadFile(srv, cmd.File, cmd.Path)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Problem uploading '%s' to Google Drive\n%s", cmd.File, err)
-				response.ErrCode = types.COMMAND_FAILED
-				break
+			// we want to upload the given files to the given path
+			for _, f := range cmd.Files {
+				res, err := UploadFile(srv, f, cmd.Path)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Problem uploading '%s' to Google Drive\n%s", f, err)
+					response.ErrCode = types.INVALID_FILE
+					break
+				}
+				fmt.Fprintf(os.Stderr, "File '%s' uploaded (%s)\n", f, res.Id)
 			}
-			fmt.Fprintf(os.Stderr, "File '%s' uploaded (%s)\n", cmd.File, res.Id)
 
 		case "delete":
 			// we want to uplaod the file/folder at the given path
@@ -249,15 +256,15 @@ func UploadFile(srv *drive.Service, file, path string) (*drive.File, error) {
 // DeleteFile deletes the file of folder (and all files in it) at the given path
 func DeleteFile(srv *drive.Service, path string) error {
 
-	// we cannot delete the root
-	if path == "root" {
-		return fmt.Errorf("cannot delete root")
-	}
-
 	// find the file we want to delete
 	file, err := FindFile(srv, path)
 	if err != nil {
 		return err
+	}
+
+	// we cannot delete the root
+	if file.Id == "root" {
+		return fmt.Errorf("cannot delete root")
 	}
 
 	err = srv.Files.Delete(file.Id).Do()

@@ -7,9 +7,9 @@ import (
 
 // represnts the input JSON to the API clients
 type Command struct {
-	Type string `json:"command"`
-	Path string `json:"path"`
-	File string `json:"file"`
+	Type  string   `json:"command"`
+	Path  string   `json:"path"`
+	Files []string `json:"files"`
 }
 
 // the valid file output for the API clients
@@ -28,6 +28,7 @@ const (
 	COMMAND_FAILED
 	INVALID_COMMAND
 	INVALID_INPUT
+	INVALID_FILE
 )
 
 // API client responses
