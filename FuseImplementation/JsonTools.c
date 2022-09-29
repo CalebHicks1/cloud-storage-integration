@@ -44,7 +44,6 @@ int parseJsonString(json_t** fileListAsJson, char stringArray[][1024], int numbe
 		fileListAsString = strncat(fileListAsString, stringArray[0], strlen(stringArray[0]));
 	}
 
-	printf("%s\n",fileListAsString);
 	json_error_t* errorCheck = NULL;
 	*fileListAsJson = json_loads(fileListAsString, 0, errorCheck);
 

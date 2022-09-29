@@ -8,16 +8,18 @@ import (
 	"os"
 	"os/exec"
 	"types"
+	"io"
 )
 
 func main() {
 	mountPath := "/mnt/nfs_client/"
 	nfsServerPath := "cap.calebhicks.net:/mnt/nfs_shared_dir"
-
+	
 	// mount nfs drive
 	err := mountNFS(mountPath, nfsServerPath)
 	if err != nil {
 		fmt.Println("Error", err)
+		
 	}
 
 	reader := bufio.NewReader(os.Stdin)
@@ -26,18 +28,25 @@ func main() {
 	for read_loop {
 		text, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Println("Error: ", err)
+			if err == io.EOF {
+				fmt.Println("Error: ", err)
+				read_loop=false
+				break; // leave loop when file descriptor closes
+			}else {
+				fmt.Println("Error: ", err)
+				read_loop=false
+				break;
+			}	
 		}
 		// parse command
 		parseJsonInput(text, mountPath)
-		read_loop = false
 	}
 
 	// unmount nfs drive
-	err = umountNFS(mountPath)
-	if err != nil {
-		fmt.Println("Error", err)
-	}
+	// err = umountNFS(mountPath)
+	// if err != nil {
+	// 	fmt.Println("Error", err)
+	// }
 }
 
 func mountNFS(mountPath string, nfsServerPath string) (err error) {
@@ -93,10 +102,13 @@ func parseJsonInput(text string, mountPath string) {
 	switch cmd.Type {
 	case "list":
 		response = list(cmd.Path, mountPath)
+	case "shutdown":
+		response = "{\"info\":\"shutting down\"}"
+		umountNFS(mountPath)
+		os.Exit(0);
 	default:
 		response = "{\"error\": \"command not implemented\"}"
 	}
-
 	fmt.Println(response)
 }
 
