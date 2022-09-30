@@ -104,7 +104,8 @@ func main() {
 	//servicing := true
 	for servicing {
 
-		//TODO: have functions return ErrorCode's so FUSE can know specific failure
+		// TODO: make generic API Client type with functions like FindFile, GetFiles, UploadFile, DownloadFile, DeleteFile
+		// have functions return ErrorCode's so FUSE can know specific failure
 		cmd, response := types.Command{}, types.Response{ErrCode: 0, Files: nil}
 
 		// read and check if pipe has been closed
@@ -163,7 +164,7 @@ func main() {
 			}
 
 		case "delete":
-			// we want to uplaod the file/folder at the given path
+			// we want to delete the given files
 			for _, f := range cmd.Files {
 				err = DeleteFile(srv, f)
 				if err != nil {
