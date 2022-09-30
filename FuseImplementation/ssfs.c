@@ -23,7 +23,8 @@
 #include "JsonTools.h"
 #include "logging.h"
 #include "Drive.h"
-
+#include "logging.h"
+#include "api.h"
 /*Function definitions *******************************************/
 
 static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
@@ -40,8 +41,8 @@ static struct fuse_operations operations = {
 
 struct Drive_Object Drives[NUM_DRIVES] =	//NumDrives defined in Drive.h
 {
-		{"Google_Drive", NULL, -1, "../src/API/google_drive/quickstart" /*quickstart*/, 0, {}, 0},
-		{"NFS", NULL, -1, "../src/API/NFS/nfs_api", 0}
+		{"Google_Drive", NULL, -1, -1,-1, "../src/API/google_drive/google_drive_client" /*quickstart*/, 0, {}, 0},
+		{"NFS", NULL, -1, -1, -1, "../src/API/NFS/nfs_api", 0}
 		// {"Test_Dir", NULL, -1, "./getFile", 0, {}, 0}
 };
 
@@ -59,7 +60,8 @@ int main(int argc, char *argv[])
 	initialize_log();
 	populate_filelists();
 
-	return fuse_main(argc, argv, &operations, NULL);
+	fuse_main(argc, argv, &operations, NULL);
+	return kill_all_processes();
 }
 
 /************************************************/

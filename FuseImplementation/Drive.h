@@ -25,7 +25,9 @@ struct Drive_Object
 {
 	char dirname[LEN_DIRNAME];
 	json_t *FileList;
-	int fd;
+	int in;
+	int out;
+	pid_t pid;
 	char exec_path[LEN_EXEC_PATH];
 	int num_files;
 	Sub_Directory sub_directories[NUM_SUBDIRS];
@@ -44,12 +46,12 @@ int update_drive(int i);
 json_t * get_file(int drive_index, char * path) ;
 
 //Getting FileLists
-int __myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char * optional_path);
-int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd);
-int listAsArray(json_t** list, char* cmd, char * optional_path);
+int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char * optional_path, int in, int out);
+//int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd);
+int listAsArray(json_t** list, char* cmd, char * optional_path, int in, int out);
 
 //Subdirectories
-int get_subdirectory_contents(json_t ** list, int drive_index,  char *path);
+int get_subdirectory_contents(json_t ** list, int drive_index,  char *path, int in, int out);
 Sub_Directory * handle_subdirectory(char * path);
 
 //Interal helpers
@@ -58,6 +60,7 @@ struct Drive_Object *get_drive(const char *path);
 int get_drive_index(const char *path);
 char * parse_out_drive_name(char * path);
 int get_file_index(const char *path, int driveIndex);
+int kill_all_processes();
 Sub_Directory * __get_subdirectory_for_path(int drive_index, char * path);
 json_t * __get_file_subdirectory(Sub_Directory * subdir, char * path);
 
