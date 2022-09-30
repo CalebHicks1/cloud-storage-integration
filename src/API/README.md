@@ -74,3 +74,6 @@ Tells the parent that the input passed to STDIN couldn't be parsed.
 
 ### 5 - Invalid File
 Tells the parent that an invalid file was given when trying to upload or download.
+
+### 6 - EOF
+Tells the parent that the input pipe was broken/closed before a shutdown command.

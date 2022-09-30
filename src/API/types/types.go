@@ -29,6 +29,7 @@ const (
 	INVALID_COMMAND
 	INVALID_INPUT
 	INVALID_FILE
+	EOF
 )
 
 // API client responses

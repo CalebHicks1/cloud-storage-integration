@@ -111,18 +111,18 @@ func main() {
 		// read and check if pipe has been closed
 		line, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Issue reading\n%s", err)
+			fmt.Fprintf(os.Stderr, "Issue reading:\n%s\n", err)
 			cmd.Type = "shutdown"
-			log.Fatalf("Terminating\n")
+			response.ErrCode = types.EOF
 		}
 		//line := `{"command":"download","path":"","files":["Wage.jpg"]}`
 
 		// parse JSON into struct
 		err = json.Unmarshal([]byte(line), &cmd)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Issue unmarchaling\n%s", err)
+		if cmd.Type != "shutdown" && err != nil {
+			fmt.Fprintf(os.Stderr, "Issue unmarshaling:\n%s\n", err)
 			response.ErrCode = types.INVALID_INPUT
-			cmd.Type = ""
+			cmd.Type = "err"
 		}
 
 		// determine the type of API call we wan to perform
@@ -179,6 +179,9 @@ func main() {
 			// stop servicing API calls
 			fmt.Fprintln(os.Stderr, "Shutting down...")
 			servicing = false
+
+		case "err":
+			// do nothing - we want to print the error
 
 		default:
 			fmt.Fprintf(os.Stderr, "Invalid API call type '%s'\n", cmd.Type)
