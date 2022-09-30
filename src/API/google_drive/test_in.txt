@@ -1,5 +1,6 @@
-{"command":"list","path":"","file":""}
-{"command":"upload","path":"Main/Test","file":"test_file.txt"}
-{"command":"list","path":"Main","file":""}
-{"command":"delete","path":"Main/Test/test_file.txt","file":""}
-{"command":"shutdown","path":"","file":""}
+{"command":"download","path":"","files":["hello_drive.txt"]}
+{"command":"list","path":"","files":[]}
+{"command":"upload","path":"Main/Test","files":["test_file.txt"]}
+{"command":"list","path":"Main","files":[]}
+{"command":"delete","path":"","files":["Main/Test/test_file.txt"]}
+{"command":"shutdown","path":"","files":[]}

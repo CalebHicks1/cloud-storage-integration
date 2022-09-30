@@ -17,8 +17,8 @@ Valid file inputs:
 
 Valid file outputs:
 - `{"Name":"file.txt","IsDir":false,"Size":1024}`
-- `{"Name":"dir1","IsDir":true,"Size":0}`
-- the size should be in bytes (0 for folders right now)
+- `{"Name":"dir1","IsDir":true,"Size":3248}`
+- the size should be in bytes
 
 ### List Files - `list`
 How to format a call that lists all files in a directory given by the `path` field.
@@ -34,17 +34,17 @@ input JSON = `{"command":"upload","path":"<valid_path>","files":["<filename1>", 
 
 response JSON = `{<ERROR_CODE>}`
 
-### Upload Files - `download`
+### Download Files - `download`
 How to format a call that downloads the files from the API given by the paths (should be paths in the API not your local machine) in the `file` array to a local directory given by the `path` field.
 
-input JSON = `{"command":"download","path":"<valid_path>","files":["<valid_path_to_file1>", "<valid_path_to_file1>", ...]}`
+input JSON = `{"command":"download","path":"<valid_path>","files":["<valid_path_to_file1>", "<valid_path_to_file2>", ...]}`
 
 response JSON = `{<ERROR_CODE>}`
 
 ### Delete Files - `delete`
 How to format a call that deletes a file/folder (folders recursively delete) given by the `path` field.
 
-input JSON = `{"command":"delete","path":"<valid_path>","files":[]}`
+input JSON = `{"command":"delete","path":"","files":["<valid_path_to_file1>", "<valid_path_to_file2>", ...]}`
 
 response JSON = `{<ERROR_CODE>}`
 
