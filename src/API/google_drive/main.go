@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -87,7 +88,7 @@ func main() {
 	}
 
 	// If modifying these scopes, delete the previously saved token.json file
-	config, err := google.ConfigFromJSON(b, drive.DriveScope)
+	config, err := google.ConfigFromJSON(b, drive.DriveScope, drive.DriveReadonlyScope)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
@@ -100,10 +101,10 @@ func main() {
 	fmt.Fprintf(os.Stderr, "Waiting to read\n")
 	// loop until we are told to shutdown
 	reader, servicing := bufio.NewReader(os.Stdin), true
+	//servicing := true
 	for servicing {
 
 		//TODO: have functions return ErrorCode's so FUSE can know specific failure
-
 		cmd, response := types.Command{}, types.Response{ErrCode: 0, Files: nil}
 
 		// read and check if pipe has been closed
@@ -113,6 +114,7 @@ func main() {
 			cmd.Type = "shutdown"
 			log.Fatalf("Terminating\n")
 		}
+		//line := `{"command":"download","path":"","files":["Wage.jpg"]}`
 
 		// parse JSON into struct
 		err = json.Unmarshal([]byte(line), &cmd)
@@ -148,15 +150,29 @@ func main() {
 				fmt.Fprintf(os.Stderr, "File '%s' uploaded (%s)\n", f, res.Id)
 			}
 
+		case "download":
+			// we want to download the given files to the given path
+			for _, f := range cmd.Files {
+				res, err := DownloadFile(srv, f, cmd.Path)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Problem downloading '%s' from Google Drive\n%s", f, err)
+					response.ErrCode = types.INVALID_FILE
+					break
+				}
+				fmt.Fprintf(os.Stderr, "File '%s' downloaded (%s)\n", f, res.Id)
+			}
+
 		case "delete":
 			// we want to uplaod the file/folder at the given path
-			err = DeleteFile(srv, cmd.Path)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error deleting '%s'\n%s", cmd.Path, err)
-				response.ErrCode = types.COMMAND_FAILED
-				break
+			for _, f := range cmd.Files {
+				err = DeleteFile(srv, f)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error deleting '%s'\n%s", f, err)
+					response.ErrCode = types.COMMAND_FAILED
+					break
+				}
+				fmt.Fprintf(os.Stderr, "Successfully deleted '%s'\n", f)
 			}
-			fmt.Fprintf(os.Stderr, "Successfully deleted '%s'\n", cmd.Path)
 
 		case "shutdown":
 			// stop servicing API calls
@@ -201,11 +217,7 @@ func GetFilesInFolder(drv *drive.Service, path string) ([]types.File, error) {
 
 		// append the files from the given page that was returned and get the next page token
 		for _, f := range r.Files {
-			if f.MimeType == "application/vnd.google-apps.folder" {
-				fs = append(fs, types.File{Name: f.Name, IsDir: true})
-			} else {
-				fs = append(fs, types.File{Name: f.Name, IsDir: false, Size: f.Size})
-			}
+			fs = append(fs, types.File{Name: f.Name, IsDir: f.MimeType == "application/vnd.google-apps.folder", Size: f.Size})
 		}
 		pageToken = r.NextPageToken
 
@@ -274,6 +286,41 @@ func DeleteFile(srv *drive.Service, path string) error {
 	return nil
 }
 
+// DOES NOT WORK
+func DownloadFile(srv *drive.Service, filePath, path string) (*drive.File, error) {
+	if filePath == "" {
+		return nil, fmt.Errorf("no file given for an 'download' call")
+	}
+
+	// find what file to download
+	file, err := FindFile(srv, filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	//fmt.Fprintf(os.Stderr, "file %s is downloadable? %v\n", file.Name, file.Capabilities.CanDownload)
+
+	res, err := srv.Files.Get(file.Id).Download()
+	//res, err := srv.Files.Export(file.Id, file.MimeType).Download()
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	localFile, err := os.Create(path + file.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer localFile.Close()
+
+	_, err = io.Copy(localFile, res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
+}
+
 // FindFile find the file/folder given by path
 // Path Format: "dir/.../dir/{file,dir}" or just "{file,dir}" if in Google Drive root
 func FindFile(srv *drive.Service, path string) (*drive.File, error) {
@@ -311,7 +358,7 @@ func FindFile(srv *drive.Service, path string) (*drive.File, error) {
 	}
 
 	// Get target in the current folder
-	res, err := srv.Files.List().Q(fmt.Sprintf("name='%s' and parents in '%s' and trashed=false", target, parent)).Do()
+	res, err := srv.Files.List().Q(fmt.Sprintf("name='%s' and parents in '%s' and trashed=false", target, parent)).Fields("files(id, name, size, mimeType)").Do()
 	if err != nil || (res != nil && res.Files != nil && len(res.Files) == 0) {
 		return nil, fmt.Errorf("could not get folder/file '%s'\n%s", target, err)
 	}
