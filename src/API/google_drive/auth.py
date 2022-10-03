@@ -14,7 +14,7 @@ from googleapiclient.errors import HttpError
 # https://developers.google.com/workspace/guides/auth-overview
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/drive']
+SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.readonly']
 
 # simple python code for getting token.json for OAuth 2.0 access to Google Drive (not being used at the moment)
 def main():

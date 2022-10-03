@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <jansson.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include "JsonTools.h"
 #include "logging.h"
 #include "Drive.h"
@@ -29,11 +30,12 @@
 
 static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
 static int do_getattr(const char *path, struct stat *st);
+static int do_read(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi);
 
 static struct fuse_operations operations = {
 	.getattr = do_getattr,
 	.readdir = do_readdir,
-	// .read		= do_read,
+    .read	 = do_read,
 };
 
 
@@ -234,6 +236,74 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 {
 	printf("--> Trying to read %s, %lu, %lu\n", path, offset, size);
 
+
+	//Separates the path into the directories/subdirectories and then the actual filename
+	int lastslash = 0;
+	char filename[64];
+	char my_path[128];
+
+	for (int i = 0; path[i] != '\0'; i++) {
+		if(path[i] == '/'){
+			lastslash = i;
+		}
+	}
+
+	//Copies filename into temp buffer
+	for (int i = 0; path[i+lastslash-1] != '\0' && i < 64; i++){
+		filename[i] = path[i+lastslash];
+	}
+
+	//Just a check I added to make sure this was working right and clue me into when I was in this function
+	printf("Last slash at %d, filename is %s\n", lastslash, filename);
+
+	strcpy(my_path, path);
+	if (lastslash != 0) {
+		my_path[lastslash] = '\0'; //Creates a path with just the directories/subdirectories, removing the filename
+	}
+	else{
+		my_path[1] = '\0'; //so my_path is '/', implying we are searching in the home directory
+	}
+
+	if (is_drive(my_path) == 0) { //File is requested straight from drive
+
+		int index = get_drive_index(my_path);
+		if (index < 0)
+		{
+			fuse_log_error("Error in get_drive_index\n");
+			return -1;
+		}
+		Drive_Object currDrive = Drives[index];
+
+		//Ensuring we are selecting the proper drive to request the file from
+		printf("The drive chosen is %s\n", currDrive.dirname);
+
+		//Send download request to the proper api's stdin
+		//  ~/cache_dir is a directory I made, I'm just trying to get it to download and not worrying about ramdisk yet
+		dprintf(currDrive.in, "{\"command\":\"download\", \"path\":\"~/cache_dir\", \"file\":\"%s\"}\n", filename);
+
+		//Should wait for output from the api, currently just blocks forever
+		char buff[128];
+		int count = 0;
+		while (read(currDrive.out, buff, 1) == 1) {
+			if (ioctl(currDrive.out, FIONREAD, &count) != -1){
+				read(currDrive.out, buff+1, count);
+			}
+		}
+		fuse_log_error("Successfully downloaded %s\n", buff);
+
+	}
+	else if(strcmp(my_path, "/") == 0) {
+		//File is requested from home directory
+		//There currently cannot be any files in home directory so we will implement this later
+		fuse_log_error("File does not exist\n");
+	}
+	else {
+		//File is requested from subdirectory
+	}
+
+	return 0;
+
+	/*
 	char file54Text[] = "Hello World From File54!";
 	char file349Text[] = "Hello World From File349!";
 	char *selectedText = NULL;
@@ -251,6 +321,6 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 
 	memcpy(buffer, selectedText + offset, size);
 
-	return strlen(selectedText) - offset;
+	return strlen(selectedText) - offset;*/
 }
 

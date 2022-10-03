@@ -11,7 +11,7 @@ build: $(FILESYSTEM_FILES)
 	cd src/API/NFS && go build -o nfs_api $(NFS_FILES)
 	cd src/API/ramdisk && go build -o ramdisk_client $(RAM_DISK_FILES)
 	cd FuseImplementation && $(COMPILER) $(FUSE_FILES) -o fuse -D_FILE_OFFSET_BITS=64  `pkg-config fuse --cflags --libs` -ljansson -ggdb3
-	echo 'To Mount: sudo ./FuseImplementation/fuse -f [mount point]'
+	echo 'To Mount: ./FuseImplementation/fuse -f [mount point]'
 
 getFile: getFileFromLocalDirectory.c
 	$(COMPILER) -ggdb3 getFileFromLocalDirectory.c -o getFile -ljansson
