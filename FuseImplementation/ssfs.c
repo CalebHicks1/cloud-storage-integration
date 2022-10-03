@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <jansson.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include "JsonTools.h"
 #include "logging.h"
 #include "Drive.h"
@@ -251,17 +252,21 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 	for (int i = 0; path[i+lastslash-1] != '\0' && i < 64; i++){
 		filename[i] = path[i+lastslash];
 	}
-	strncpy(my_path, path, 128);
+
+	//Just a check I added to make sure this was working right and clue me into when I was in this function
+	printf("Last slash at %d, filename is %s\n", lastslash, filename);
+
+	strcpy(my_path, path);
 	if (lastslash != 0) {
-		my_path[lastslash] = '\0';
+		my_path[lastslash] = '\0'; //Creates a path with just the directories/subdirectories, removing the filename
 	}
 	else{
-		my_path[1] = '\0';
+		my_path[1] = '\0'; //so my_path is '/', implying we are searching in the home directory
 	}
 
-	if (is_drive(my_path) == 0) {
-		//File is requested straight from drive
-		int index = get_drive_index((char *)path);
+	if (is_drive(my_path) == 0) { //File is requested straight from drive
+
+		int index = get_drive_index(my_path);
 		if (index < 0)
 		{
 			fuse_log_error("Error in get_drive_index\n");
@@ -269,7 +274,22 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		}
 		Drive_Object currDrive = Drives[index];
 
-		dprintf(currDrive.in, "{\"command\":\"download\", \"path\":\"%s\", \"file\":\"%s\"}\n", my_path, filename);
+		//Ensuring we are selecting the proper drive to request the file from
+		printf("The drive chosen is %s\n", currDrive.dirname);
+
+		//Send download request to the proper api's stdin
+		//  ~/cache_dir is a directory I made, I'm just trying to get it to download and not worrying about ramdisk yet
+		dprintf(currDrive.in, "{\"command\":\"download\", \"path\":\"~/cache_dir\", \"file\":\"%s\"}\n", filename);
+
+		//Should wait for output from the api, currently just blocks forever
+		char buff[128];
+		int count = 0;
+		while (read(currDrive.out, buff, 1) == 1) {
+			if (ioctl(currDrive.out, FIONREAD, &count) != -1){
+				read(currDrive.out, buff+1, count);
+			}
+		}
+		fuse_log_error("Successfully downloaded %s\n", buff);
 
 	}
 	else if(strcmp(my_path, "/") == 0) {
