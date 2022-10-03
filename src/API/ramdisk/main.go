@@ -195,33 +195,35 @@ func list(cmd types.Command) types.Response {
 // Executes the upload command according to the API spec
 func upload(cmd types.Command) types.Response {
 	// https://opensource.com/article/18/6/copying-files-go
-	srcPath := cmd.File
-	destPath := path.Join(config.MountPath, cmd.Path)
 
-	// Make sure src exists and is a regular file
-	srcStat, err := os.Stat(srcPath)
-	if err != nil || !srcStat.Mode().IsRegular() {
-		return errorCode(types.COMMAND_FAILED)
-	}
+	for _, srcPath := range cmd.Files {
+		destPath := path.Join(config.MountPath, cmd.Path)
 
-	// Open source
-	src, err := os.Open(srcPath)
-	if err != nil {
-		return errorCode(types.COMMAND_FAILED)
-	}
-	defer src.Close()
+		// Make sure src exists and is a regular file
+		srcStat, err := os.Stat(srcPath)
+		if err != nil || !srcStat.Mode().IsRegular() {
+			return errorCode(types.COMMAND_FAILED)
+		}
 
-	// Create destination
-	dest, err := os.Create(destPath)
-	if err != nil {
-		return errorCode(types.COMMAND_FAILED)
-	}
-	defer dest.Close()
+		// Open source
+		src, err := os.Open(srcPath)
+		if err != nil {
+			return errorCode(types.COMMAND_FAILED)
+		}
+		defer src.Close()
 
-	// Copy
-	_, err = io.Copy(dest, src)
-	if err != nil {
-		return errorCode(types.COMMAND_FAILED)
+		// Create destination
+		dest, err := os.Create(destPath)
+		if err != nil {
+			return errorCode(types.COMMAND_FAILED)
+		}
+		defer dest.Close()
+
+		// Copy
+		_, err = io.Copy(dest, src)
+		if err != nil {
+			return errorCode(types.COMMAND_FAILED)
+		}
 	}
 
 	return success()
