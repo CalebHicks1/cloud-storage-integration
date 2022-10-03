@@ -29,11 +29,12 @@
 
 static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
 static int do_getattr(const char *path, struct stat *st);
+static int do_read(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi);
 
 static struct fuse_operations operations = {
 	.getattr = do_getattr,
 	.readdir = do_readdir,
-	// .read		= do_read,
+    .read	 = do_read,
 };
 
 
@@ -234,6 +235,55 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 {
 	printf("--> Trying to read %s, %lu, %lu\n", path, offset, size);
 
+
+	//Separates the path into the directories/subdirectories and then the actual filename
+	int lastslash = 0;
+	char filename[64];
+	char my_path[128];
+
+	for (int i = 0; path[i] != '\0'; i++) {
+		if(path[i] == '/'){
+			lastslash = i;
+		}
+	}
+
+	//Copies filename into temp buffer
+	for (int i = 0; path[i+lastslash-1] != '\0' && i < 64; i++){
+		filename[i] = path[i+lastslash];
+	}
+	strncpy(my_path, path, 128);
+	if (lastslash != 0) {
+		my_path[lastslash] = '\0';
+	}
+	else{
+		my_path[1] = '\0';
+	}
+
+	if (is_drive(my_path) == 0) {
+		//File is requested straight from drive
+		int index = get_drive_index((char *)path);
+		if (index < 0)
+		{
+			fuse_log_error("Error in get_drive_index\n");
+			return -1;
+		}
+		Drive_Object currDrive = Drives[index];
+
+		dprintf(currDrive.in, "{\"command\":\"download\", \"path\":\"%s\", \"file\":\"%s\"}\n", my_path, filename);
+
+	}
+	else if(strcmp(my_path, "/") == 0) {
+		//File is requested from home directory
+		//There currently cannot be any files in home directory so we will implement this later
+		fuse_log_error("File does not exist\n");
+	}
+	else {
+		//File is requested from subdirectory
+	}
+
+	return 0;
+
+	/*
 	char file54Text[] = "Hello World From File54!";
 	char file349Text[] = "Hello World From File349!";
 	char *selectedText = NULL;
@@ -251,6 +301,6 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 
 	memcpy(buffer, selectedText + offset, size);
 
-	return strlen(selectedText) - offset;
+	return strlen(selectedText) - offset;*/
 }
 
