@@ -276,6 +276,10 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 
 		//Ensuring we are selecting the proper drive to request the file from
 		printf("The drive chosen is %s\n", currDrive.dirname);
+		if (!is_process_running(currDrive)){
+			fuse_log_error("Drive api was closed\n");
+			return -1;
+		}
 
 		//Send download request to the proper api's stdin
 		//  ~/cache_dir is a directory I made, I'm just trying to get it to download and not worrying about ramdisk yet
