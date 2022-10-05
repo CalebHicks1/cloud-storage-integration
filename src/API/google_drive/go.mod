@@ -1,4 +1,4 @@
-module quickstart
+module google_drive
 
 go 1.18
 
