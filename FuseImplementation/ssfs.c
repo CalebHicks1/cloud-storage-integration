@@ -31,11 +31,11 @@
 static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
 static int do_getattr(const char *path, struct stat *st);
 static int do_read(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi);
-
+static void split_path_file(char** pathBuffer, char** filenameBuffer, char *fullPath) ;
 static struct fuse_operations operations = {
 	.getattr = do_getattr,
 	.readdir = do_readdir,
-    .read	 = do_read,
+   .read	 = do_read,
 };
 
 
@@ -43,10 +43,13 @@ static struct fuse_operations operations = {
 
 struct Drive_Object Drives[NUM_DRIVES] =	//NumDrives defined in Drive.h
 {
-		{"Google_Drive", NULL, -1, -1,-1, "../src/API/google_drive/google_drive_client" /*quickstart*/, 0, {}, 0},
+		{"Google_Drive", NULL, -1, -1,-1, "../src/API/google_drive/google_drive_client" , 0, {}, 0},
 		{"NFS", NULL, -1, -1, -1, "../src/API/NFS/nfs_api", 0}
+		
 		// {"Test_Dir", NULL, -1, "./getFile", 0, {}, 0}
 };
+struct Drive_Object CacheDrive = {"Ramdisk", NULL, -1, -1, -1, "../src/API/ramdisk/ramdisk_client", 0, {}, 0};
+const char* CacheFile = "/mnt/ramdisk/";
 
 /**********************************************************/
 
@@ -58,12 +61,32 @@ struct Drive_Object Drives[NUM_DRIVES] =	//NumDrives defined in Drive.h
  */
 int main(int argc, char *argv[])
 {
-	// json_t* fileListAsArray ;
+
+
+
 	initialize_log();
+	//start Cache -move this to start process function in api
+
+    int out; // fd to read from executable
+	int in; // fd to write to executable
+
+	// 
+	fuse_log("running module at %s\n",  CacheDrive.exec_path);
+	int success = spawn_module(&in,&out, &CacheDrive.pid, CacheDrive.exec_path);
+	if (success == 0){CacheDrive.in = in;
+	CacheDrive.out = out;}
+	else{
+		fuse_log_error("Cache did not start started");
+		return -1;
+	}
 	populate_filelists();
 
-	fuse_main(argc, argv, &operations, NULL);
-	return kill_all_processes();
+
+
+	
+
+	//To-Do:Catch Ctrl-c and kill processes
+	return fuse_main(argc, argv, &operations, NULL);
 }
 
 /************************************************/
@@ -232,41 +255,80 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 	return 0;
 }
 
+
+/**
+ * From https://stackoverflow.com/a/1575314
+ * 
+ **/
+static void split_path_file(char** pathBuffer, char** filenameBuffer, char *fullPath) {
+    char *slash = fullPath, *next;
+    while ((next = strpbrk(slash + 1, "\\/"))) slash = next;
+    if (fullPath != slash) slash++;
+    *pathBuffer = strndup(fullPath, slash - fullPath - 1);
+	
+    *filenameBuffer = strdup(slash);
+	
+}
+static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
+		    struct fuse_file_info *fi)
+{
+	int fd;
+	int res;
+
+	if(fi == NULL){
+		fd = open(path, O_RDONLY);
+		fuse_log_error("Open");
+	}
+	else
+		fd = fi->fh;
+	
+	if (fd == -1){
+		fuse_log_error("fd file");
+		return -1;
+	}
+
+	res = pread(fd, buf, size, offset);
+	if (res == -1){
+		fuse_log_error("pread fail");
+		res = -1;}
+
+	if(fi == NULL)
+		close(fd);
+	return res;
+}
 static int do_read(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi)
 {
 	printf("--> Trying to read %s, %lu, %lu\n", path, offset, size);
+	printf(buffer);
+	char cwd[512];
+   if (getcwd(cwd, sizeof(cwd)) != NULL) {
+       printf("Current working dir: %s\n", cwd);
+   } else {
+       perror("getcwd() error");
+       return -1;
+   }
 
 
-	//Separates the path into the directories/subdirectories and then the actual filename
-	int lastslash = 0;
-	char filename[64];
-	char my_path[128];
-
-	for (int i = 0; path[i] != '\0'; i++) {
-		if(path[i] == '/'){
-			lastslash = i;
-		}
+	
+	if (is_process_running(CacheDrive.pid)){
+		fuse_log_error("Cache not running\n");
+		//return -1;
 	}
+	
 
-	//Copies filename into temp buffer
-	for (int i = 0; path[i+lastslash-1] != '\0' && i < 64; i++){
-		filename[i] = path[i+lastslash];
-	}
+	char* downloadFile = strcat(cwd, CacheFile);
+ 
+char* pathcpy = strdup(path);
+	char* pathBuffer = calloc(strlen(pathcpy),sizeof(char));
+	char* filename= calloc(strlen(pathcpy),sizeof(char));
+fuse_log_error("%s\n",pathcpy);
+	split_path_file(&pathBuffer, &filename, pathcpy);
+		fuse_log_error("%s\n",pathBuffer);
+ char* downloadFolder= strcat(downloadFile,filename);
 
-	//Just a check I added to make sure this was working right and clue me into when I was in this function
-	printf("Last slash at %d, filename is %s\n", lastslash, filename);
+	if (is_drive(pathBuffer) == 0) { //File is requested straight from drive
 
-	strcpy(my_path, path);
-	if (lastslash != 0) {
-		my_path[lastslash] = '\0'; //Creates a path with just the directories/subdirectories, removing the filename
-	}
-	else{
-		my_path[1] = '\0'; //so my_path is '/', implying we are searching in the home directory
-	}
-
-	if (is_drive(my_path) == 0) { //File is requested straight from drive
-
-		int index = get_drive_index(my_path);
+		int index = get_drive_index(pathBuffer);
 		if (index < 0)
 		{
 			fuse_log_error("Error in get_drive_index\n");
@@ -275,35 +337,55 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		Drive_Object currDrive = Drives[index];
 
 		//Ensuring we are selecting the proper drive to request the file from
-		printf("The drive chosen is %s\n", currDrive.dirname);
-		if (!is_process_running(currDrive)){
+		fuse_log_error("The drive chosen is %s\n", currDrive.dirname);
+		if (!is_process_running(currDrive.pid)){
 			fuse_log_error("Drive api was closed\n");
 			return -1;
 		}
 
 		//Send download request to the proper api's stdin
 		//  ~/cache_dir is a directory I made, I'm just trying to get it to download and not worrying about ramdisk yet
-		dprintf(currDrive.in, "{\"command\":\"download\", \"path\":\"~/cache_dir\", \"file\":\"%s\"}\n", filename);
+		dprintf(currDrive.in, "{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n",downloadFolder, filename);
+		fuse_log_error("{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n",downloadFolder, filename);
 
 		//Should wait for output from the api, currently just blocks forever
 		char buff[128];
 		int count = 0;
-		while (read(currDrive.out, buff, 1) == 1) {
-			if (ioctl(currDrive.out, FIONREAD, &count) != -1){
-				read(currDrive.out, buff+1, count);
+		while(1){
+		if(read(currDrive.out, buff, 4)> 0) {
+			fuse_log_error(buff);
+			if (strncmp(buff, "{0}",3) == 0){
+					fuse_log_error("Successfully downloaded %s\n", buff);
+				
+				fuse_log("Getting file from cache");
+				const char* cachePath =strcat(downloadFile, filename);
+				return xmp_read(cachePath, buffer, size, offset,fi);
+				
+				
+
+			}
+			else if (strncmp(buff, "{0}", 1) == 0){
+				fuse_log_error("Unsuccessfully downloaded %s\n", buff);
+				return -1;
 			}
 		}
-		fuse_log_error("Successfully downloaded %s\n", buff);
+		}	
+	
 
 	}
-	else if(strcmp(my_path, "/") == 0) {
+	
+
+	else if(strlen(pathBuffer) == 0) {
 		//File is requested from home directory
 		//There currently cannot be any files in home directory so we will implement this later
 		fuse_log_error("File does not exist\n");
+		
 	}
 	else {
-		//File is requested from subdirectory
+		//File is requested from subdirector
+		fuse_log_error("Subdirectory\n");
 	}
+
 
 	return 0;
 
