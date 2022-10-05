@@ -28,7 +28,7 @@ input JSON = `{"command":"list","path":"<valid_path>","files":[]}`
 response JSON = `[<file1>, <file2>, ...]`, `{<ERROR_CODE>}` (on error)
 
 ### Upload Files - `upload`
-How to format a call that uploads files given by the `file` array to a directory given by the `path` field.
+How to format a call that uploads files given by the `file` array to a directory given by the `path` field. If the file already exists, overwrite the file.
 
 input JSON = `{"command":"upload","path":"<valid_path>","files":["<filename1>", "<filename2>", ...]}`
 

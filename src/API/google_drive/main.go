@@ -264,8 +264,19 @@ func UploadFile(srv *drive.Service, file, path string) (*drive.File, error) {
 		return nil, fmt.Errorf("problem detecting MIME type for '%s'\n%s", file, err)
 	}
 
+	// create the drive file to upload/update
+	driveFile := &drive.File{Name: fileInfo.Name()}
+
+	// if file already exists, overwrite it
+	if res, err := srv.Files.List().Q(fmt.Sprintf("name='%s' and parents in '%s' and trashed=false", f.Name(), parent.Id)).Fields("files(id, name, size, mimeType)").Do(); err == nil && res != nil && res.Files != nil && len(res.Files) > 0 {
+
+		// attempt to update/overwrite the file (might have to add more at)
+		return srv.Files.Update(res.Files[0].Id, driveFile).Media(f).ProgressUpdater(func(now, size int64) { fmt.Fprintf(os.Stderr, "%d, %d\r", now, size) }).Do()
+	}
+
 	// attempt to upload the file
-	driveFile := &drive.File{Name: fileInfo.Name(), MimeType: mType.String(), Parents: []string{parent.Id}}
+	driveFile.Parents = []string{parent.Id}
+	driveFile.MimeType = mType.String()
 	return srv.Files.Create(driveFile).Media(f).ProgressUpdater(func(now, size int64) { fmt.Fprintf(os.Stderr, "%d, %d\r", now, size) }).Do()
 }
 
@@ -291,7 +302,7 @@ func DeleteFile(srv *drive.Service, path string) error {
 }
 
 // DOES NOT WORK
-func DownloadFile(srv *drive.Service, filePath, path string) (*drive.File, error) {
+func DownloadFile(srv *drive.Service, filePath, downloadPath string) (*drive.File, error) {
 	if filePath == "" {
 		return nil, fmt.Errorf("no file given for an 'download' call")
 	}
@@ -302,8 +313,6 @@ func DownloadFile(srv *drive.Service, filePath, path string) (*drive.File, error
 		return nil, err
 	}
 
-	//fmt.Fprintf(os.Stderr, "file %s is downloadable? %v\n", file.Name, file.Capabilities.CanDownload)
-
 	res, err := srv.Files.Get(file.Id).Download()
 	//res, err := srv.Files.Export(file.Id, file.MimeType).Download()
 	if err != nil {
@@ -311,7 +320,12 @@ func DownloadFile(srv *drive.Service, filePath, path string) (*drive.File, error
 	}
 	defer res.Body.Close()
 
-	localFile, err := os.Create(path + file.Name)
+	slash := "/"
+	if downloadPath != "" && string(downloadPath[len(downloadPath)-1]) == "/" {
+		slash = ""
+	}
+
+	localFile, err := os.Create(downloadPath + slash + file.Name)
 	if err != nil {
 		return nil, err
 	}
