@@ -72,6 +72,8 @@ func mount() {
 	// https://freshman.tech/snippets/go/check-file-exists/
 	_, err := os.Stat(config.MountPath)
 	if err != nil {
+		// If it doesn't exist then make it
+		// https://gosamples.dev/create-directory/
 		if os.IsNotExist(err) {
 			err = os.MkdirAll(config.MountPath, os.ModePerm)
 		}

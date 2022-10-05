@@ -11,5 +11,6 @@ params:
 #include <signal.h>
 int spawn_module(int *in, int *out,  pid_t *pid, char *exec_dir);
 int shutdown(pid_t pid, int in, int out);
+int is_process_running(pid_t pid);
 
 #endif
