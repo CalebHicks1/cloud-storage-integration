@@ -217,7 +217,7 @@ func (c *GoogleDriveClient) DeleteFile(path string) error {
 	return nil
 }
 
-// DOES NOT WORK
+//
 func (c *GoogleDriveClient) DownloadFile(filePath, downloadPath string) error {
 	if filePath == "" {
 		return fmt.Errorf("no file given for an 'download' call")
@@ -236,7 +236,12 @@ func (c *GoogleDriveClient) DownloadFile(filePath, downloadPath string) error {
 	}
 	defer res.Body.Close()
 
-	localFile, err := os.Create(downloadPath + file.Name)
+	slash := "/"
+	if string(downloadPath[len(downloadPath)-1]) == "/" {
+		slash = ""
+	}
+
+	localFile, err := os.Create(downloadPath + slash + file.Name)
 	if err != nil {
 		return err
 	}
