@@ -302,7 +302,7 @@ func DeleteFile(srv *drive.Service, path string) error {
 }
 
 // DOES NOT WORK
-func DownloadFile(srv *drive.Service, filePath, path string) (*drive.File, error) {
+func DownloadFile(srv *drive.Service, filePath, downloadPath string) (*drive.File, error) {
 	if filePath == "" {
 		return nil, fmt.Errorf("no file given for an 'download' call")
 	}
@@ -320,7 +320,12 @@ func DownloadFile(srv *drive.Service, filePath, path string) (*drive.File, error
 	}
 	defer res.Body.Close()
 
-	localFile, err := os.Create(path + file.Name)
+	slash := "/"
+	if string(downloadPath[len(downloadPath)-1]) == "/" {
+		slash = ""
+	}
+
+	localFile, err := os.Create(downloadPath + slash + file.Name)
 	if err != nil {
 		return nil, err
 	}
