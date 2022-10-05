@@ -237,7 +237,7 @@ func (c *GoogleDriveClient) DownloadFile(filePath, downloadPath string) error {
 	defer res.Body.Close()
 
 	slash := "/"
-	if string(downloadPath[len(downloadPath)-1]) == "/" {
+	if downloadPath != "" && string(downloadPath[len(downloadPath)-1]) == "/" {
 		slash = ""
 	}
 
