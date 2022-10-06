@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -80,10 +81,14 @@ func saveToken(path string, token *oauth2.Token) {
 
 type GoogleDriveClient struct {
 	types.APIClient
-	Srv *drive.Service
+	Srv  *drive.Service
+	Name string
 }
 
 func main() {
+
+	debug := flag.Bool("debug", false, "prints successs statments for debugging")
+	flag.Parse()
 
 	ctx := context.Background()
 	b, err := os.ReadFile("credentials.json")
@@ -103,18 +108,18 @@ func main() {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}
 
-	module := types.APIClient{Client: &GoogleDriveClient{Srv: srv}}
-	module.Serve()
+	api := types.APIClient{Client: &GoogleDriveClient{Srv: srv, Name: "Google Drive"}}
+	api.Serve(*debug)
 }
 
 // help from: https://developers.google.com/drive/api/v2/reference/files/list
 // GetFilesInFolder fetches and displays all files in the given folder
-func (c *GoogleDriveClient) GetFiles(path string) ([]types.File, error) {
+func (c *GoogleDriveClient) GetFiles(path string) ([]types.File, *types.APIError) {
 
 	// get the folder to list files in
 	folder, err := c.FindFile(path)
 	if err != nil {
-		return nil, err
+		return nil, &types.APIError{Code: types.FILE_NOT_FOUND, Message: fmt.Sprintf("%s\n", err)}
 	}
 
 	var fs []types.File
@@ -130,8 +135,7 @@ func (c *GoogleDriveClient) GetFiles(path string) ([]types.File, error) {
 		// run the query
 		r, err := q.Do()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occurred: %v\n", err)
-			return fs, err
+			return nil, &types.APIError{Code: types.CLIENT_FAILED, Message: fmt.Sprintf("%s\n", err)}
 		}
 
 		// append the files from the given page that was returned and get the next page token
@@ -150,90 +154,94 @@ func (c *GoogleDriveClient) GetFiles(path string) ([]types.File, error) {
 
 // help from: https://gist.github.com/tanaikech/19655a8130bac1ba510b29c9c44bbd97
 // UploadFile uploads the given file to the given path in the drive
-func (c *GoogleDriveClient) UploadFile(file, path string) error {
+func (c *GoogleDriveClient) UploadFile(file, path string) *types.APIError {
 	if file == "" {
-		return fmt.Errorf("no file given for an 'upload' call")
+		return &types.APIError{Code: types.INVALID_INPUT, Message: "no file given for an 'upload' call"}
 	}
 
 	// find where to upload our file
 	parent, err := c.FindFile(path)
 	if err != nil {
-		return err
+		return &types.APIError{Code: types.FILE_NOT_FOUND, Message: fmt.Sprintf("%s\n", err)}
 	}
 
 	// open and stat our file
 	f, err := os.Open(file)
 	if err != nil {
-		return fmt.Errorf("problem openeing '%s'\n%s", file, err)
+		return &types.APIError{Code: types.COMMAND_FAILED, Message: fmt.Sprintf("problem openeing\n%s\n", err)}
 	}
 	defer f.Close()
 	fileInfo, err := f.Stat()
 	if err != nil {
-		return fmt.Errorf("problem statting '%s'\n%s", file, err)
+		return &types.APIError{Code: types.COMMAND_FAILED, Message: fmt.Sprintf("problem statting\n%s\n", err)}
 	}
 
 	// get the MIME type of our file
 	mimetype.SetLimit(0)
 	mType, err := mimetype.DetectFile(file)
 	if err != nil {
-		return fmt.Errorf("problem detecting MIME type for '%s'\n%s", file, err)
+		return &types.APIError{Code: types.COMMAND_FAILED, Message: fmt.Sprintf("problem detecting MIME type\n%s\n", err)}
 	}
 
 	// create the drive file to upload/update
 	driveFile := &drive.File{Name: fileInfo.Name()}
 
 	// if file already exists, overwrite it
-	if res, err := c.Srv.Files.List().Q(fmt.Sprintf("name='%s' and parents in '%s' and trashed=false", f.Name(), parent.Id)).Fields("files(id, name, size, mimeType)").Do(); err == nil && res != nil && res.Files != nil && len(res.Files) > 0 {
-
+	res, err := c.Srv.Files.List().Q(fmt.Sprintf("name='%s' and parents in '%s' and trashed=false", f.Name(), parent.Id)).Fields("files(id, name, size, mimeType)").Do()
+	if err == nil && res != nil && res.Files != nil && len(res.Files) > 0 {
 		// attempt to update/overwrite the file (might have to add more at)
 		_, err = c.Srv.Files.Update(res.Files[0].Id, driveFile).Media(f).ProgressUpdater(func(now, size int64) { fmt.Fprintf(os.Stderr, "%d, %d\r", now, size) }).Do()
-		return err
+	} else if err == nil {
+		// attempt to upload the file
+		driveFile.Parents = []string{parent.Id}
+		driveFile.MimeType = mType.String()
+		_, err = c.Srv.Files.Create(driveFile).Media(f).ProgressUpdater(func(now, size int64) { fmt.Fprintf(os.Stderr, "%d, %d\r", now, size) }).Do()
 	}
 
-	// attempt to upload the file
-	driveFile.Parents = []string{parent.Id}
-	driveFile.MimeType = mType.String()
-	_, err = c.Srv.Files.Create(driveFile).Media(f).ProgressUpdater(func(now, size int64) { fmt.Fprintf(os.Stderr, "%d, %d\r", now, size) }).Do()
-	return err
+	if err != nil {
+		return &types.APIError{Code: types.CLIENT_FAILED, Message: fmt.Sprintf("%s\n", err)}
+	}
+
+	return nil
 }
 
 // DeleteFile deletes the file of folder (and all files in it) at the given path
-func (c *GoogleDriveClient) DeleteFile(path string) error {
+func (c *GoogleDriveClient) DeleteFile(path string) *types.APIError {
 
 	// find the file we want to delete
 	file, err := c.FindFile(path)
 	if err != nil {
-		return err
+		return &types.APIError{Code: types.FILE_NOT_FOUND, Message: fmt.Sprintf("%s\n", err)}
 	}
 
 	// we cannot delete the root
 	if file.Id == "root" {
-		return fmt.Errorf("cannot delete root")
+		return &types.APIError{Code: types.INVALID_INPUT, Message: "cannot delete root"}
 	}
 
 	err = c.Srv.Files.Delete(file.Id).Do()
 	if err != nil {
-		return err
+		return &types.APIError{Code: types.CLIENT_FAILED, Message: fmt.Sprintf("%s\n", err)}
 	}
 	return nil
 }
 
 // DownloadFile downlaods the file at filePath to the dir specified by downloadPath
-func (c *GoogleDriveClient) DownloadFile(filePath, downloadPath string) error {
+func (c *GoogleDriveClient) DownloadFile(filePath, downloadPath string) *types.APIError {
 	if filePath == "" {
-		return fmt.Errorf("no file given for an 'download' call")
+		return &types.APIError{Code: types.INVALID_INPUT, Message: "no file given for an 'download' call"}
 	}
 
 	// find what file to download
 	file, err := c.FindFile(filePath)
 	if err != nil {
-		return err
+		return &types.APIError{Code: types.FILE_NOT_FOUND, Message: fmt.Sprintf("%s\n", err)}
 	}
 
 	res, err := c.Srv.Files.Get(file.Id).Download()
 	//res, err := srv.Files.Export(file.Id, file.MimeType).Download()
 	if err != nil {
-		return err
+		return &types.APIError{Code: types.CLIENT_FAILED, Message: fmt.Sprintf("%s\n", err)}
 	}
 	defer res.Body.Close()
 
@@ -244,13 +252,13 @@ func (c *GoogleDriveClient) DownloadFile(filePath, downloadPath string) error {
 
 	localFile, err := os.Create(downloadPath + slash + file.Name)
 	if err != nil {
-		return err
+		return &types.APIError{Code: types.COMMAND_FAILED, Message: fmt.Sprintf("%s\n", err)}
 	}
 	defer localFile.Close()
 
 	_, err = io.Copy(localFile, res.Body)
 	if err != nil {
-		return err
+		return &types.APIError{Code: types.COMMAND_FAILED, Message: fmt.Sprintf("%s\n", err)}
 	}
 
 	return nil
@@ -301,6 +309,6 @@ func (c *GoogleDriveClient) FindFile(path string) (*drive.File, error) {
 	return res.Files[0], nil
 }
 
-func (c *GoogleDriveClient) Fprintf(w io.Writer, format string, a ...any) (n int, err error) {
-	return fmt.Fprintf(w, fmt.Sprintf("[Google Drive] %s", format), a...)
+func (c *GoogleDriveClient) String() string {
+	return c.Name
 }
