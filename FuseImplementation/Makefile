@@ -1,11 +1,11 @@
 COMPILER = gcc
-FILESYSTEM_FILES = ssfs.c JsonTools.c JsonTools.h Drive.c logging.c api.c
+FILESYSTEM_FILES = ssfs.c JsonTools.h JsonTools.c Drive.c Drive.h logging.c logging.h api.c api.h
 JANSSON = "./jansson-2.13/"
 
 
 build: $(FILESYSTEM_FILES)
 	$(COMPILER) $(FILESYSTEM_FILES) -o fuse -ggdb3 -D_FILE_OFFSET_BITS=64  `pkg-config fuse --cflags --libs` -ljansson
-	echo 'To Mount: ./fuse -f [mount point]'
+	echo 'To Mount: sudo ./fuse -f [mount point]'
 
 	$(COMPILER) getFileFromLocalDirectory.c -o getFile -ljansson -ggdb3
 

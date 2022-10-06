@@ -10,7 +10,6 @@
 
 #define FUSE_USE_VERSION 30
 
-
 #include <fuse.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -20,30 +19,36 @@
 #include <stdlib.h>
 #include <jansson.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <errno.h>
 #include "JsonTools.h"
 #include "logging.h"
 #include "Drive.h"
-
+#include "logging.h"
+#include "api.h"
 /*Function definitions *******************************************/
 
 static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
 static int do_getattr(const char *path, struct stat *st);
-
+static int do_read(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi);
+static void split_path_file(char **pathBuffer, char **filenameBuffer, char *fullPath);
 static struct fuse_operations operations = {
 	.getattr = do_getattr,
 	.readdir = do_readdir,
-	// .read		= do_read,
+	.read = do_read,
 };
-
 
 /*Global varibales and structs ***********************************/
 
-struct Drive_Object Drives[NUM_DRIVES] =	//NumDrives defined in Drive.h
-{
-		{"Google_Drive", NULL, -1, "../src/API/google_drive/google_drive_client" /*quickstart*/, 0, {}, 0},
-		{"NFS", NULL, -1, "../src/API/NFS/nfs_api", 0}
+struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
+	{
+		{"Google_Drive", NULL, -1, -1, -1, "../src/API/google_drive/google_drive_client", 0, {}, 0},
+		{"NFS", NULL, -1, -1, -1, "../src/API/NFS/nfs_api", 0}
+
 		// {"Test_Dir", NULL, -1, "./getFile", 0, {}, 0}
 };
+struct Drive_Object CacheDrive = {"Ramdisk", NULL, -1, -1, -1, "../src/API/ramdisk/ramdisk_client", 0, {}, 0};
+const char *CacheFile = "/mnt/ramdisk/";
 
 /**********************************************************/
 
@@ -55,10 +60,29 @@ struct Drive_Object Drives[NUM_DRIVES] =	//NumDrives defined in Drive.h
  */
 int main(int argc, char *argv[])
 {
-	// json_t* fileListAsArray ;
+
 	initialize_log();
+	// start Cache -move this to start process function in api
+
+	int out; // fd to read from executable
+	int in;	 // fd to write to executable
+
+	//
+	fuse_log("running module at %s\n", CacheDrive.exec_path);
+	int success = spawn_module(&in, &out, &CacheDrive.pid, CacheDrive.exec_path);
+	if (success == 0)
+	{
+		CacheDrive.in = in;
+		CacheDrive.out = out;
+	}
+	else
+	{
+		fuse_log_error("Cache did not start started");
+		return -1;
+	}
 	populate_filelists();
 
+	// To-Do:Catch Ctrl-c and kill processes
 	return fuse_main(argc, argv, &operations, NULL);
 }
 
@@ -79,7 +103,7 @@ int main(int argc, char *argv[])
 static int do_getattr(const char *path, struct stat *st)
 {
 	fuse_log("\tAttributes of %s requested\n", path);
-	
+
 	if (is_drive(path) == 0)
 	{
 		fuse_log("Drive found\n");
@@ -87,33 +111,38 @@ static int do_getattr(const char *path, struct stat *st)
 		st->st_nlink = 2; // Why "two" hardlinks instead of "one"? The answer is here: http://unix.stackexchange.com/a/101536
 		return 0;
 	}
-	 int drive = get_drive_index(path);
+	int drive = get_drive_index(path);
 	if (drive > -1)
 	{
 		fuse_log("\tElement in drive\n");
 		int index = get_file_index(path, drive);
 		//-------------------	Request file from drive
-		json_t * file = get_file(drive, (char*) path);
-		
-		if (file == NULL) {
+		json_t *file = get_file(drive, (char *)path);
+
+		if (file == NULL)
+		{
 			fuse_log_error("Could not find file %s\n", path);
 			return -1;
 		}
-		
+
 		json_t *isDir = json_object_get(file, "IsDir");
-		if (isDir != NULL) {
-			if (json_is_true(isDir)) {
+		if (isDir != NULL)
+		{
+			if (json_is_true(isDir))
+			{
 				st->st_mode = S_IFDIR | 0755;
 			}
-			else {
+			else
+			{
 				st->st_mode = S_IFREG | 0644;
 			}
 		}
-		else {
+		else
+		{
 			fuse_log_error("IsDir field was not present for %s\n", path);
 			return -1;
 		}
-		 // Check back for different file types
+		// Check back for different file types
 		st->st_nlink = 1;
 
 		json_t *size = json_object_get(file, "Size");
@@ -126,7 +155,7 @@ static int do_getattr(const char *path, struct stat *st)
 		st->st_gid = getgid();	   // The group of the file/directory is the same as the group of the user who mounted the filesystem
 		st->st_atime = time(NULL); // The last "a"ccess of the file/directory is right now
 		st->st_mtime = time(NULL); // The last "m"odification of the file/directory is right now
-								  
+
 		return 0;
 	}
 
@@ -159,7 +188,6 @@ static int do_getattr(const char *path, struct stat *st)
 
 	return 0;
 }
-
 
 // "filler": https://www.cs.nmsu.edu/~pfeiffer/fuse-tutorial/html/unclear.html
 static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi)
@@ -202,11 +230,14 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 			filler(buffer, Drives[i].dirname, NULL, 0);
 		}
 	}
-	else {	//Then this *should* be a subdirectory
+	else
+	{ // Then this *should* be a subdirectory
 		fuse_log("This should be a subdirectory: %s\n", path);
-		Sub_Directory * dir = handle_subdirectory((char*) path);
-		if (dir != NULL) {
-			for (size_t index = 0; index < dir->num_files; index++) {
+		Sub_Directory *dir = handle_subdirectory((char *)path);
+		if (dir != NULL)
+		{
+			for (size_t index = 0; index < dir->num_files; index++)
+			{
 				const char *fileName = getJsonFileName(json_array_get(dir->FileList, index));
 				if (fileName != NULL)
 				{
@@ -218,20 +249,162 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 				}
 			}
 		}
-		else {
+		else
+		{
 			fuse_log_error("Subdirectory not generated\n");
 		}
-		
 	}
-	
 
 	return 0;
 }
 
+/**
+ * From https://stackoverflow.com/a/1575314
+ *
+ **/
+static void split_path_file(char **pathBuffer, char **filenameBuffer, char *fullPath)
+{
+	char *slash = fullPath, *next;
+	while ((next = strpbrk(slash + 1, "\\/")))
+		slash = next;
+	if (fullPath != slash)
+		slash++;
+	*pathBuffer = strndup(fullPath, slash - fullPath - 1);
+
+	*filenameBuffer = strdup(slash);
+}
+
+/**
+ * Fuse "passthrough" - completes a read function
+ **/
+static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
+					struct fuse_file_info *fi)
+{
+	int fd;
+	int res;
+
+	fd = open(path, O_RDONLY);
+	fuse_log_error("Open");
+
+	if (fd == -1)
+	{
+		fuse_log_error("fd file\n");
+		return -1;
+	}
+
+	res = pread(fd, buf, size, offset);
+	if (res == -1)
+		fuse_log_error("pread fail\n");
+
+	if (fi == NULL)
+		close(fd);
+	return res;
+}
+
 static int do_read(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi)
 {
-	printf("--> Trying to read %s, %lu, %lu\n", path, offset, size);
+	fuse_log("--> Trying to read %s, %lu, %lu\n", path, offset, size);
 
+	char cwd[512];
+	if (getcwd(cwd, sizeof(cwd)) != NULL)
+	{
+		// printf("Current working dir: %s\n", cwd);
+	}
+	else
+	{
+		perror("getcwd() error");
+		return -1;
+	}
+
+	/*
+	if (is_process_running(CacheDrive.pid)){
+		fuse_log_error("Cache not running\n");
+		//return -1;
+	}
+*/
+	char *downloadFile = strcat(cwd, CacheFile);
+
+	char *pathcpy = strdup(path);
+	char *pathBuffer = calloc(strlen(pathcpy), sizeof(char));
+	char *filename = calloc(strlen(pathcpy), sizeof(char));
+
+	split_path_file(&pathBuffer, &filename, pathcpy);
+	fuse_log_error("%s\n", pathBuffer);
+	// char* downloadFolder= strcat(downloadFile,filename);
+
+	if (is_drive(pathBuffer) == 0)
+	{ // File is requested straight from drive
+
+		int index = get_drive_index(pathBuffer);
+		if (index < 0)
+		{
+			fuse_log_error("Error in get_drive_index\n");
+			free(pathBuffer);
+			free(filename);
+			return -1;
+		}
+		Drive_Object currDrive = Drives[index];
+
+		// Ensuring we are selecting the proper drive to request the file from
+		fuse_log_error("The drive chosen is %s\n", currDrive.dirname);
+		if (!is_process_running(currDrive.pid))
+		{
+			fuse_log_error("Drive api was closed\n");
+			free(pathBuffer);
+			free(filename);
+			return -1;
+		}
+
+		// Send download request to the proper api's stdin
+		dprintf(currDrive.in, "{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
+		fuse_log_error("{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
+
+		// Should wait for output from the api, currently just blocks forever
+		char buff[4];
+		int count = 0;
+		while (1)
+		{
+			if (read(currDrive.out, buff, 4) > 0)
+			{
+
+				if (strncmp(buff, "{0}", 3) == 0)
+				{
+
+					fuse_log_error("Successfully downloaded %s\n", buff);
+
+					char *cachePath = strcat(downloadFile, filename);
+
+					while (access(cachePath, F_OK) == -1)
+					{
+						// do nothing - making sure file is found
+					}
+
+					return xmp_read(cachePath, buffer, size, offset, fi);
+				}
+				else if (strncmp(buff, "{", 1) == 0)
+				{
+					fuse_log_error("Unsuccessfully downloaded %s\n", buff);
+					return -1;
+				}
+			}
+		}
+	}
+
+	else if (strlen(pathBuffer) == 0)
+	{
+		// File is requested from home directory
+		// There currently cannot be any files in home directory so we will implement this later
+		fuse_log_error("File does not exist\n");
+	}
+	else
+	{
+		// File is requested from subdirector
+		fuse_log_error("Subdirectory\n");
+	}
+
+	return 0;
+
+	/*
 	char file54Text[] = "Hello World From File54!";
 	char file349Text[] = "Hello World From File349!";
 	char *selectedText = NULL;
@@ -249,6 +422,5 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 
 	memcpy(buffer, selectedText + offset, size);
 
-	return strlen(selectedText) - offset;
+	return strlen(selectedText) - offset;*/
 }
-
