@@ -43,8 +43,16 @@ int populate_filelists()
 	int res = 0;
 	for (int i = 0; i < NUM_DRIVES; i++)
 	{
+		int out; // fd to read from executable
+	int in; // fd to write to executable
+
+	// launch executable
+	fuse_log("running module at %s\n",  Drives[i].exec_path);
+	spawn_module(&in,&out, &Drives[i].pid, Drives[i].exec_path);
+	Drives[i].in = in;
+	Drives[i].out = out;
 		//Populate FileList
-		Drives[i].num_files = listAsArray(&(Drives[i].FileList), Drives[i].exec_path, NULL);
+		Drives[i].num_files = listAsArray(&(Drives[i].FileList), Drives[i].exec_path, NULL, Drives[i].in, Drives[i].out);
 		if (Drives[i].num_files < 0) {
 			fuse_log_error("Populating %s failed\n", Drives[i].dirname);
 			res = -1;
@@ -58,15 +66,10 @@ int populate_filelists()
  * If optional_path != NULL, retrieve list of files in subdirectory optional_path instead
  * Serves as a callback for myGetFileList
  */
-int __myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char * optional_path)
+int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char * optional_path, int in, int out)
 {
 
-	int out; // fd to read from executable
-	int in; // fd to write to executable
-
-	// launch executable
-	fuse_log("running module at %s\n", cmd);
-	spawn_module(&in,&out,cmd);
+	
 
 	// Format command as a list query for root directory
 	if (optional_path == NULL) {
@@ -79,25 +82,19 @@ int __myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char * option
 	// read last line from executable
 	int cnt = 0;
 	ssize_t read_size = read(out, lines[cnt++], LINE_MAX_BUFFER_SIZE);
-	
+	/*
 	// shut down api
 	dprintf(in, "{\"command\":\"shutdown\"}\n");
 	
 	// we don't need these file descriptors anymore
 	close(out);
 	close(in);
-	
+	*/
 	return cnt;
 }
 
 
-/**
- * Calls an executable that gets a formatted output of file info
- */
-int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd)
-{
-	return __myGetFileList(lines, cmd, NULL);
-}
+
 
 /*Subdirectories *************************************************/
 
@@ -137,9 +134,9 @@ json_t * __get_file_subdirectory(Sub_Directory * subdir, char * path) {
 	
 }
 
-int get_subdirectory_contents(json_t ** list, int drive_index,  char *path) {
+int get_subdirectory_contents(json_t ** list, int drive_index,  char *path, int in , int out) {
 	fuse_log("Generating filelist for subdirectory %s\n", path);
-	return listAsArray(list, Drives[drive_index].exec_path, path);
+	return listAsArray(list, Drives[drive_index].exec_path, path, in, out);
 }
 
 /**
@@ -173,7 +170,7 @@ Sub_Directory * handle_subdirectory(char * path) {
 		return NULL;
 	}
 	Sub_Directory * new_directory = &(Drives[drive_index].sub_directories[Drives[drive_index].num_sub_directories]);
-	int num_files = get_subdirectory_contents(&(new_directory->FileList), drive_index, relative_path);
+	int num_files = get_subdirectory_contents(&(new_directory->FileList), drive_index, relative_path, Drives[drive_index].in,Drives[drive_index].out);
 	if (num_files < 0) {
 		fuse_log_error("Problem getting subdirectory contents\n");
 	}
@@ -200,9 +197,10 @@ Sub_Directory * handle_subdirectory(char * path) {
  * optional_path: if not NULL, corresponds to the subdirectory in which we want to 
  * list the files - if NULL, list at root level of the drive
  */
-int listAsArray(json_t** list, char * cmd, char * optional_path) {
+int listAsArray(json_t** list, char * cmd, char * optional_path, int in, int out) {
 	char execOutput[100][LINE_MAX_BUFFER_SIZE];
-	int a = __myGetFileList(execOutput, cmd, optional_path);
+
+	int a = myGetFileList(execOutput, cmd, optional_path, in, out);
 
 	json_t *fileListAsArray;
 
@@ -293,4 +291,12 @@ int get_file_index(const char *path, int driveIndex)
 
 
 
+//teardown
+int kill_all_processes(){
+		for (int i = 0; i < NUM_DRIVES; i++)
+	{
+		shutdown(Drives[i].pid, Drives[i].in, Drives[i].out);
+	}
+	return 0;
+}
 
