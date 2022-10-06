@@ -9,7 +9,7 @@ Below are the valid operations that the API clients support along with their val
 
 Valid path inputs:
 - root directory: `"/"`, `""`
-- other directories: `"/dir1/dir2/"`, `"/dir1/dir2"`, `"dir1/dir2/"`, `"dir1/dir2"`
+- other directories: `"/dir1/dir2/"`, `"/dir1/dir2"`, `"dir1/dir2/"`, `"dir1/dir2"` (include leading `/` to start at root)
 
 Valid file inputs:
 - provide the absolute path to the file on your system to be uploaded

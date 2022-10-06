@@ -1,5 +1,6 @@
-{"command":"download","path":"/mnt/c/Users/Quinn/Desktop","files":["hello_drive.txt"]}
+{"command":"download","path":"","files":["hello_drive.txt"]}
 {"command":"shutdown","path":"","files":[]}
+{"command":"list","path":"","files":[]}
 {"command":"list","path":"","files":[]}
 {"command":"upload","path":"Main/Test","files":["test_file.txt"]}
 {"command":"list","path":"Main","files":[]}

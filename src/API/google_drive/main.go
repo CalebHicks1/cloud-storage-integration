@@ -103,7 +103,8 @@ func main() {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}
 
-	types.Serve(&GoogleDriveClient{Srv: srv})
+	module := types.APIModule{Client: &GoogleDriveClient{Srv: srv}}
+	module.Serve()
 }
 
 // help from: https://developers.google.com/drive/api/v2/reference/files/list
@@ -217,7 +218,7 @@ func (c *GoogleDriveClient) DeleteFile(path string) error {
 	return nil
 }
 
-//
+// DownloadFile downlaods the file at filePath to the dir specified by downloadPath
 func (c *GoogleDriveClient) DownloadFile(filePath, downloadPath string) error {
 	if filePath == "" {
 		return fmt.Errorf("no file given for an 'download' call")
@@ -237,7 +238,7 @@ func (c *GoogleDriveClient) DownloadFile(filePath, downloadPath string) error {
 	defer res.Body.Close()
 
 	slash := "/"
-	if downloadPath != "" && string(downloadPath[len(downloadPath)-1]) == "/" {
+	if downloadPath == "" || string(downloadPath[len(downloadPath)-1]) == "/" {
 		slash = ""
 	}
 
