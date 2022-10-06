@@ -46,6 +46,7 @@ int parseJsonString(json_t** fileListAsJson, char stringArray[][1024], int numbe
 
 	json_error_t* errorCheck = NULL;
 	*fileListAsJson = json_loads(fileListAsString, 0, errorCheck);
+	free(fileListAsString);
 
 	if (errorCheck != NULL){
 		printf("Json encoding error: %s", errorCheck->text);
