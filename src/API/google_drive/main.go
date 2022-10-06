@@ -103,7 +103,7 @@ func main() {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}
 
-	module := types.APIModule{Client: &GoogleDriveClient{Srv: srv}}
+	module := types.APIClient{Client: &GoogleDriveClient{Srv: srv}}
 	module.Serve()
 }
 
@@ -261,7 +261,7 @@ func (c *GoogleDriveClient) DownloadFile(filePath, downloadPath string) error {
 func (c *GoogleDriveClient) FindFile(path string) (*drive.File, error) {
 
 	// return the root if that is what we are looking for
-	if path == "root" || path == "" || path == "/" {
+	if path == "" || path == "/" {
 		return &drive.File{Id: "root"}, nil
 	}
 
