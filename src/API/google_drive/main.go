@@ -321,7 +321,7 @@ func DownloadFile(srv *drive.Service, filePath, downloadPath string) (*drive.Fil
 	defer res.Body.Close()
 
 	slash := "/"
-	if downloadPath != "" && string(downloadPath[len(downloadPath)-1]) == "/" {
+	if downloadPath != "" || string(downloadPath[len(downloadPath)-1]) == "/" {
 		slash = ""
 	}
 
