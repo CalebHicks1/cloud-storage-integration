@@ -1,3 +1,5 @@
+#ifndef SUBDIRECTORY_H
+#define SUBDIRECTORY_H
 #include <fuse.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -47,3 +49,5 @@ int insert_subdirectory(int drive_index, SubDirectory * subdir);
 json_t * subdir_find_file(int drive_index, char * path);
 SubDirectory * SubDirectory_create(char * name);
 void dump_subdirectory(SubDirectory * subdir, int indent);
+
+#endif

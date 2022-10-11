@@ -1,3 +1,5 @@
+#ifndef DRIVE_H
+#define DRIVE_H
 #include <fuse.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -9,6 +11,7 @@
 #include <sys/stat.h>
 #include "JsonTools.h"
 #include "list/list.h"
+#include "subdirectories/SubDirectory.h"
 
 #define LEN_DIRNAME 200
 #define LEN_EXEC_PATH 200
@@ -70,9 +73,10 @@ int get_drive_index(const char *path);
 char * parse_out_drive_name(char * path);
 int get_file_index(const char *path, int driveIndex);
 int kill_all_processes();
-Sub_Directory * __get_subdirectory_for_path(int drive_index, char * path);
+//Sub_Directory * __get_subdirectory_for_path(int drive_index, char * path);
 json_t * __get_file_subdirectory(Sub_Directory * subdir, char * path);
 
 //Debug
 void dump_drive(Drive_Object * drive);
+#endif
 

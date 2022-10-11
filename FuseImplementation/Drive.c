@@ -174,27 +174,27 @@ int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char *optional_
 
 /*Subdirectories *************************************************/
 
-Sub_Directory *__get_subdirectory_for_path(int drive_index, char *path)
-{
-	size_t max_len = 0;
-	Sub_Directory *ret = NULL;
-	for (int subdir_index = 0; subdir_index < Drives[drive_index].num_sub_directories; subdir_index++)
-	{
-		char *sub_dirname = Drives[drive_index].sub_directories[subdir_index].dirname;
-		if (strncmp(sub_dirname, path, strlen(sub_dirname)) == 0)
-		{
-			// Check len so we don't choose /drive/subdirectory over drive/subdirectory/sub-subdirectory
-			// Check that names aren't exactly equal, as in that case the file IS the subdirectory
-			//... and we want the directory containing it
-			if ((strlen(sub_dirname) > max_len) && (strcmp(path, sub_dirname) != 0))
-			{
-				max_len = strlen(sub_dirname);
-				ret = &(Drives[drive_index].sub_directories[subdir_index]);
-			}
-		}
-	}
-	return ret;
-}
+//Sub_Directory *__get_subdirectory_for_path(int drive_index, char *path)
+//{
+	//size_t max_len = 0;
+	//Sub_Directory *ret = NULL;
+	//for (int subdir_index = 0; subdir_index < Drives[drive_index].num_sub_directories; subdir_index++)
+	//{
+		//char *sub_dirname = Drives[drive_index].sub_directories[subdir_index].dirname;
+		//if (strncmp(sub_dirname, path, strlen(sub_dirname)) == 0)
+		//{
+			//// Check len so we don't choose /drive/subdirectory over drive/subdirectory/sub-subdirectory
+			//// Check that names aren't exactly equal, as in that case the file IS the subdirectory
+			////... and we want the directory containing it
+			//if ((strlen(sub_dirname) > max_len) && (strcmp(path, sub_dirname) != 0))
+			//{
+				//max_len = strlen(sub_dirname);
+				//ret = &(Drives[drive_index].sub_directories[subdir_index]);
+			//}
+		//}
+	//}
+	//return ret;
+//}
 
 json_t *__get_file_subdirectory(Sub_Directory *subdir, char *path)
 {

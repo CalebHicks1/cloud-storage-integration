@@ -1,4 +1,4 @@
-Generated at: 2022-10-10 21:15:55
+Generated at: 2022-10-11 11:17:33
 ---------> [main] Cache did not start started---------> [do_read] /.xdg-volume-info
 ---------> [do_read] Subdirectory
 ---------> [do_read] /autorun.inf
@@ -17,57 +17,21 @@ Generated at: 2022-10-10 21:15:55
 ---------> [do_read] {"command":"download", "path":"/home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/", "files":["test1"]}
 ---------> [do_read] Unsuccessfully downloaded {5}
 /home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/
+---------> [get_file] Could not find file /Google_Drive/myFolder/.hidden
+---------> [do_getattr] Could not find file /Google_Drive/myFolder/.hidden
 ---------> [get_file] Could not find file /Google_Drive/whatever/.hidden
 ---------> [do_getattr] Could not find file /Google_Drive/whatever/.hidden
----------> [do_read] /Google_Drive/whatever
+---------> [do_read] /Google_Drive/myFolder
 ---------> [do_read] Subdirectory
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/.hidden
----------> [do_read] /Google_Drive/whatever/hi_woo
+---------> [do_read] /Google_Drive/myFolder
 ---------> [do_read] Subdirectory
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/boo/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/boo/.hidden
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/boo/ahhhhh/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/boo/ahhhhh/.hidden
----------> [do_read] /Google_Drive/whatever/hi_woo/boo/ahhhhh
+---------> [get_file] Could not find file /Google_Drive/myFolder/subfolder/.hidden
+---------> [do_getattr] Could not find file /Google_Drive/myFolder/subfolder/.hidden
+---------> [do_read] /Google_Drive/myFolder/subfolder
 ---------> [do_read] Subdirectory
----------> [do_read] /Google_Drive/whatever/hi_woo
----------> [do_read] Subdirectory
----------> [get_file] Could not find file /Google_Drive/whatever/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/.hidden
----------> [do_read] /Google_Drive/whatever
----------> [do_read] Subdirectory
----------> [get_file] Could not find file /Google_Drive/.hidden
----------> [do_getattr] Could not find file /Google_Drive/.hidden
----------> [do_read] /Google_Drive
----------> [do_read] The drive chosen is Google_Drive
----------> [do_read] {"command":"download", "path":"/home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/", "files":["test1"]}
----------> [do_read] Unsuccessfully downloaded {5}
-/home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/
----------> [do_read] /Google_Drive
----------> [do_read] The drive chosen is Google_Drive
----------> [do_read] {"command":"download", "path":"/home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/", "files":["test1"]}
----------> [do_read] Unsuccessfully downloaded {5}
-/home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/
----------> [do_read] /.hidden
----------> [do_read] Subdirectory
----------> [get_file] Could not find file /Google_Drive/.hidden
----------> [do_getattr] Could not find file /Google_Drive/.hidden
----------> [do_read] /Google_Drive
----------> [do_read] The drive chosen is Google_Drive
----------> [do_read] {"command":"download", "path":"/home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/", "files":["test1"]}
----------> [do_read] Unsuccessfully downloaded {5}
-/home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/
----------> [do_read] /Google_Drive
----------> [do_read] The drive chosen is Google_Drive
----------> [do_read] {"command":"download", "path":"/home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/", "files":["test1"]}
----------> [do_read] Unsuccessfully downloaded {5}
-/home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/
 ---------> [get_file] Could not find file /Google_Drive/myFolder/.hidden
 ---------> [do_getattr] Could not find file /Google_Drive/myFolder/.hidden
 ---------> [do_read] /Google_Drive/myFolder
 ---------> [do_read] Subdirectory
 ---------> [do_read] /Google_Drive/myFolder
----------> [do_read] Subdirectory
----------> [do_read] /.hidden
 ---------> [do_read] Subdirectory
