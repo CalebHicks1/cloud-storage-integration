@@ -1,8 +1,45 @@
 #include "Drive.h"
 #include "logging.h"
+#include "subdirectories/SubDirectory.h"
 //#include "ssfs.h"
 #include "api.h"
 extern Drive_Object Drives[NUM_DRIVES];
+
+#define BASH
+
+void dump_drive(Drive_Object * drive)
+{
+	if (drive == NULL) {
+		fuse_log_error("Null drive\n");
+		return;
+	}
+	//This Drives attributes
+	printf("| %s (%d files)\n", &(drive->dirname[0]), drive->num_files);
+	//Files
+	for (int i = 0; i < drive->num_files; i++) {
+		json_t * curr_file = json_array_get(drive->FileList, i);
+		printf("|--- %s\n", getJsonFileName(curr_file));
+	}
+	
+	//Old subdirectories
+	/*
+	printf("Subdirectories\n");
+	for (int i = 0; i < drive->num_sub_directories; i++) {
+		printf("\t%s: num_files: %d\n", drive->sub_directories[i].dirname, drive->sub_directories[i].num_files);
+	}
+	*/
+	
+	//New subdirectories
+	//printf("New subdirectories\n");
+	struct list_elem * e;
+	for (e = list_begin(&(drive->subdirectories_list)); e != list_end(&(drive->subdirectories_list)); e = list_next(e))
+	{
+		struct SubDirectory * currSubdir = list_entry(e, struct SubDirectory, elem);
+		//printf("|--- ");
+		dump_subdirectory(currSubdir, 0);
+	}
+	
+}
 
 /**
  * Return json object if file exists anywhere in drive, NULL if not
@@ -24,6 +61,28 @@ json_t *get_file(int drive_index, char *path)
 		json_t *ret = __get_file_subdirectory(dir, path);
 		if (ret != NULL)
 		{
+			Get_Result * folder = get_subdirectory(drive_index, path);
+			if (folder->type == ERROR)
+			{
+				fuse_log_error("--------------------------> NEW FILESYSTEM: could not find %s\n", path);
+				
+			}
+			else
+			{
+				fuse_log("--------------------------> apparently, found the correct subdirectory\n");
+				
+			}
+			json_t * ret = SubDirectory_find_file(folder->subdirectory, path);
+			if (ret != NULL)
+			{
+				fuse_log("... and we found it\n");
+				
+			}
+			else 
+			{
+				fuse_log_error("We did not find it :(((((\n");
+				
+			}
 			return ret;
 		}
 		else
@@ -55,6 +114,7 @@ int populate_filelists()
 
 		Drives[i].in = in;
 		Drives[i].out = out;
+		list_init(&(Drives[i].subdirectories_list));
 		// Populate FileList
 		Drives[i].num_files = listAsArray(&(Drives[i].FileList), Drives[i].exec_path, NULL, Drives[i].in, Drives[i].out);
 		if (Drives[i].num_files < 0)
@@ -129,10 +189,17 @@ Sub_Directory *__get_subdirectory_for_path(int drive_index, char *path)
 
 json_t *__get_file_subdirectory(Sub_Directory *subdir, char *path)
 {
+	//------------------------------------------
+	fuse_log("*************************path: %s\n", path);
+
+	
+	
+	
+	//----------------------------------------------
 	for (int file_index = 0; file_index < subdir->num_files; file_index++)
 	{
 		json_t *curr = json_array_get(subdir->FileList, file_index);
-		char fullname[200];
+		char fullname[500];
 		strcpy(fullname, "\0");
 		strcat(&fullname[0], subdir->dirname);
 		strcat(&fullname[0], "/");
@@ -151,12 +218,18 @@ int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in
 	return listAsArray(list, Drives[drive_index].exec_path, path, in, out);
 }
 
+
 /**
  * If subdirectory exists, return it. If not, generate it, and add it
  * to the list of the Drive's subdirectories
  */
 Sub_Directory *handle_subdirectory(char *path)
 {
+	
+	//return NULL;
+	//dump_drive(&Drives[0]);
+	
+	//--------------------------------
 	fuse_log("Called for %s\n", path);
 	int drive_index = get_drive_index(path);
 
@@ -200,6 +273,16 @@ Sub_Directory *handle_subdirectory(char *path)
 	json_object_set(new_directory->self, "Size", json_integer(0));
 	json_object_set(new_directory->self, "IsDir", json_string("true"));
 	Drives[drive_index].num_sub_directories++;
+	
+	//New subdirectory version!
+	//Create directory
+	SubDirectory * new = SubDirectory_create(path);
+	//Insert subdirectory
+	insert_subdirectory(drive_index, new);
+	//Insert files 
+	fuse_log("Getting files for new subdirectory structure\n");
+	new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path, Drives[drive_index].in, Drives[drive_index].out);
+	
 	return new_directory;
 }
 

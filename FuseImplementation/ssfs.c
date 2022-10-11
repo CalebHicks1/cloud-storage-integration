@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	populate_filelists();
-
+	dump_drive(&(Drives[0]));
 	// To-Do:Catch Ctrl-c and kill processes
 	return fuse_main(argc, argv, &operations, NULL);
 }

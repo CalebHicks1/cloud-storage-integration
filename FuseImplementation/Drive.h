@@ -8,6 +8,7 @@
 #include <jansson.h>
 #include <sys/stat.h>
 #include "JsonTools.h"
+#include "list/list.h"
 
 #define LEN_DIRNAME 200
 #define LEN_EXEC_PATH 200
@@ -21,6 +22,11 @@ struct Sub_Directory
 					//in case it's needed later
 };
 typedef struct Sub_Directory Sub_Directory;
+
+//-------------------------- New subdirectory
+
+//----------------------------------
+
 struct Drive_Object
 {
 	char dirname[LEN_DIRNAME];
@@ -32,6 +38,9 @@ struct Drive_Object
 	int num_files;
 	Sub_Directory sub_directories[NUM_SUBDIRS];
 	int num_sub_directories;
+	
+	
+	struct list subdirectories_list;
 };
 typedef struct Drive_Object Drive_Object;
 
@@ -63,4 +72,7 @@ int get_file_index(const char *path, int driveIndex);
 int kill_all_processes();
 Sub_Directory * __get_subdirectory_for_path(int drive_index, char * path);
 json_t * __get_file_subdirectory(Sub_Directory * subdir, char * path);
+
+//Debug
+void dump_drive(Drive_Object * drive);
 

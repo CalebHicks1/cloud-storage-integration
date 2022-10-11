@@ -1,7 +1,26 @@
-Generated at: 2022-09-29 23:26:01
----------> [get_file] Could not find file /Google_Drive/NewDir
----------> [do_getattr] Could not find file /Google_Drive/NewDir
----------> [get_file] Could not find file /Google_Drive/NewDir
----------> [do_getattr] Could not find file /Google_Drive/NewDir
----------> [get_file] Could not find file /Google_Drive/NewDir
----------> [do_getattr] Could not find file /Google_Drive/NewDir
+Generated at: 2022-10-10 20:25:22
+---------> [main] Cache did not start started---------> [do_read] /.xdg-volume-info
+---------> [do_read] Subdirectory
+---------> [do_read] /autorun.inf
+---------> [do_read] Subdirectory
+---------> [do_read] /.hidden
+---------> [do_read] Subdirectory
+---------> [get_file] Could not find file /Google_Drive/.hidden
+---------> [do_getattr] Could not find file /Google_Drive/.hidden
+---------> [do_read] /Google_Drive
+---------> [do_read] The drive chosen is Google_Drive
+---------> [do_read] {"command":"download", "path":"/home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/", "files":["test1"]}
+---------> [do_read] Unsuccessfully downloaded {5}
+/home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/
+---------> [do_read] /Google_Drive
+---------> [do_read] The drive chosen is Google_Drive
+---------> [do_read] {"command":"download", "path":"/home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/", "files":["test1"]}
+---------> [do_read] Unsuccessfully downloaded {5}
+/home/james/master/cloud-storage-integration/FuseImplementation/mnt/ramdisk/
+---------> [get_file] /Google_Drive/myFolder/.hidden should have been in subdirectory /Google_Drive/myFolder, but wasn't
+---------> [get_file] Could not find file /Google_Drive/myFolder/.hidden
+---------> [do_getattr] Could not find file /Google_Drive/myFolder/.hidden
+---------> [do_read] /Google_Drive/myFolder
+---------> [do_read] Subdirectory
+---------> [do_read] /Google_Drive/myFolder
+---------> [do_read] Subdirectory

@@ -13,7 +13,7 @@ const char* getJsonFileName(json_t* file){
 	
 	else if (json_is_object(file) ){
 		
-		 printf("\n");
+		//printf("\n");
 	 	json_t* value = json_object_get(file, "Name");
 
 	 	if (value ==NULL){
@@ -21,7 +21,7 @@ const char* getJsonFileName(json_t* file){
 		}
 		return json_string_value(value);
 	}
-	printf("Not obj\n");
+	//printf("Not obj\n");
 	return NULL;
 }
 
