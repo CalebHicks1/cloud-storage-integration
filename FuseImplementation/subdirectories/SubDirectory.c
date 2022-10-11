@@ -3,6 +3,10 @@
 #include "../logging.h"
 #include "subdir_utils.h"
 extern Drive_Object Drives[NUM_DRIVES];
+
+/**
+ * Set dirname, rel_dirname, and initialize FileList
+ */
 SubDirectory * SubDirectory_create(char * name)
 {
 	SubDirectory * ret = calloc(sizeof(SubDirectory), 1);
@@ -70,6 +74,11 @@ void dump_subdirectory(SubDirectory * subdir, int indent)
 	free(indents);
 }
 
+/**
+ * Recursively search the tree for the specified file
+ * (1) Get the subdirectory corresponding to the path 
+ * (2) Search that subdirectory for the file, if applicable
+ */
 json_t * subdir_find_file(int drive_index, char * path)
 {
 	Get_Result * folder = get_subdirectory(drive_index, path);
@@ -109,6 +118,11 @@ json_t * subdir_find_file(int drive_index, char * path)
 	
 }
 
+
+/**
+ * Search a SINGLE subdirectory for file specified by "path",
+ * where "path" is an absolute path
+ */
 json_t * SubDirectory_find_file(SubDirectory * dir, char * path)
 {
 	for (int i = 0; i < dir->num_files; i++)
@@ -127,6 +141,10 @@ json_t * SubDirectory_find_file(SubDirectory * dir, char * path)
 	return NULL;
 }
 
+/**
+ * Given a list of subdirectories, return the subdirectory with rel_dirname
+ * corresponding to relative_path
+ */
 SubDirectory * find_subdirectory(struct list * subdirectory_list, char * relative_path)
 {
 	struct list_elem *e;
@@ -147,20 +165,16 @@ SubDirectory * find_subdirectory(struct list * subdirectory_list, char * relativ
 
 void __get_subdirectory(Get_Result * result, SubDirectory * dir, char ** tokens, SubDirectory * prev)
 {
-	//fuse_log("In __get_subdirectory!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-	//fuse_log("token: %s\n", *tokens);
 	if (*tokens == NULL)
 	{
 		result->type = THIS;
 		result->subdirectory = dir;
 		result->prev = prev;
-		//fuse_log("tokens was null\n");
 		return;
 	}
 	SubDirectory * next = find_subdirectory(&(dir->subdirectories_list), *tokens);
 	if (next == NULL)
 	{
-		//fuse_log("next was null\n");
 		result->type = ELEMENT;
 		result->subdirectory = dir;
 		return;
