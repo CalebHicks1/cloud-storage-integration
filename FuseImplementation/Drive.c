@@ -174,46 +174,9 @@ int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char *optional_
 
 /*Subdirectories *************************************************/
 
-//Sub_Directory *__get_subdirectory_for_path(int drive_index, char *path)
-//{
-	//size_t max_len = 0;
-	//Sub_Directory *ret = NULL;
-	//for (int subdir_index = 0; subdir_index < Drives[drive_index].num_sub_directories; subdir_index++)
-	//{
-		//char *sub_dirname = Drives[drive_index].sub_directories[subdir_index].dirname;
-		//if (strncmp(sub_dirname, path, strlen(sub_dirname)) == 0)
-		//{
-			//// Check len so we don't choose /drive/subdirectory over drive/subdirectory/sub-subdirectory
-			//// Check that names aren't exactly equal, as in that case the file IS the subdirectory
-			////... and we want the directory containing it
-			//if ((strlen(sub_dirname) > max_len) && (strcmp(path, sub_dirname) != 0))
-			//{
-				//max_len = strlen(sub_dirname);
-				//ret = &(Drives[drive_index].sub_directories[subdir_index]);
-			//}
-		//}
-	//}
-	//return ret;
-//}
-
-json_t *__get_file_subdirectory(Sub_Directory *subdir, char *path)
-{
-	for (int file_index = 0; file_index < subdir->num_files; file_index++)
-	{
-		json_t *curr = json_array_get(subdir->FileList, file_index);
-		char fullname[500];
-		strcpy(fullname, "\0");
-		strcat(&fullname[0], subdir->dirname);
-		strcat(&fullname[0], "/");
-		strcat(&fullname[0], getJsonFileName(curr));
-		if (strcmp(fullname, path) == 0)
-		{
-			return curr;
-		}
-	}
-	return NULL;
-}
-
+/**
+ * Uses API to get contents of a subdirectory, placing this contents in param list
+ */
 int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in, int out)
 {
 	fuse_log("Generating filelist for subdirectory %s\n", path);
@@ -227,11 +190,6 @@ int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in
  */
 Sub_Directory *handle_subdirectory(char *path)
 {
-	
-	//return NULL;
-	//dump_drive(&Drives[0]);
-	
-	//--------------------------------
 	fuse_log("Called for %s\n", path);
 	int drive_index = get_drive_index(path);
 
@@ -339,6 +297,9 @@ int is_drive(const char *path)
 	return -1;
 }
 
+/**
+ * Gets drive PRECISELY corresponding to path
+ */
 struct Drive_Object *get_drive(const char *path)
 {
 	for (int i = 0; i < NUM_DRIVES; i++)
@@ -351,7 +312,10 @@ struct Drive_Object *get_drive(const char *path)
 	return NULL;
 }
 
-// Works for path = drivename, or path = drivename/somefile
+/**
+ * Gets index of drive that "path" would live in
+ * Works for path = drivename, or path = drivename/somefile
+ */
 int get_drive_index(const char *path)
 {
 
@@ -379,6 +343,9 @@ char *parse_out_drive_name(char *path)
 	return (++ret);
 }
 
+/**
+ * Gets the index of "path" in ROOT level of drive
+ */
 int get_file_index(const char *path, int driveIndex)
 {
 	char *cut_path = parse_out_drive_name((char *)path);
