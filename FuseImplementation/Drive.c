@@ -55,43 +55,52 @@ json_t *get_file(int drive_index, char *path)
 		return json_array_get(Drives[drive_index].FileList, file_index);
 	}
 	// Check subdirectories
-	Sub_Directory *dir = __get_subdirectory_for_path(drive_index, path);
-	if (dir != NULL)
+	
+	json_t * file = subdir_find_file(drive_index, path);
+	if (file == NULL)
 	{
-		json_t *ret = __get_file_subdirectory(dir, path);
-		if (ret != NULL)
-		{
-			Get_Result * folder = get_subdirectory(drive_index, path);
-			if (folder->type == ERROR)
-			{
-				fuse_log_error("--------------------------> NEW FILESYSTEM: could not find %s\n", path);
-				
-			}
-			else
-			{
-				fuse_log("--------------------------> apparently, found the correct subdirectory\n");
-				
-			}
-			json_t * ret = SubDirectory_find_file(folder->subdirectory, path);
-			if (ret != NULL)
-			{
-				fuse_log("... and we found it\n");
-				
-			}
-			else 
-			{
-				fuse_log_error("We did not find it :(((((\n");
-				
-			}
-			return ret;
-		}
-		else
-		{
-			fuse_log_error("%s should have been in subdirectory %s, but wasn't\n", path, dir->dirname);
-		}
+		fuse_log_error("Could not find file %s\n", path);
+		return NULL;
 	}
-	fuse_log_error("Could not find file %s\n", path);
-	return NULL;
+	fuse_log("We found the file!!!!!\n");
+	return file;
+	//Sub_Directory *dir = __get_subdirectory_for_path(drive_index, path);
+	//if (dir != NULL)
+	//{
+		//json_t *ret = __get_file_subdirectory(dir, path);
+		//if (ret != NULL)
+		//{
+			//Get_Result * folder = get_subdirectory(drive_index, path);
+			//if (folder->type == ERROR)
+			//{
+				//fuse_log_error("--------------------------> NEW FILESYSTEM: could not find %s\n", path);
+				
+			//}
+			//else
+			//{
+				//fuse_log("--------------------------> apparently, found the correct subdirectory\n");
+				
+			//}
+			//json_t * ret = SubDirectory_find_file(folder->subdirectory, path);
+			//if (ret != NULL)
+			//{
+				//fuse_log("... and we found it\n");
+				
+			//}
+			//else 
+			//{
+				//fuse_log_error("We did not find it :(((((\n");
+				
+			//}
+			//return ret;
+		//}
+		//else
+		//{
+			//fuse_log_error("%s should have been in subdirectory %s, but wasn't\n", path, dir->dirname);
+		//}
+	//}
+	//fuse_log_error("Could not find file %s\n", path);
+	//return NULL;
 }
 //							Setup / Updating
 
@@ -189,13 +198,6 @@ Sub_Directory *__get_subdirectory_for_path(int drive_index, char *path)
 
 json_t *__get_file_subdirectory(Sub_Directory *subdir, char *path)
 {
-	//------------------------------------------
-	fuse_log("*************************path: %s\n", path);
-
-	
-	
-	
-	//----------------------------------------------
 	for (int file_index = 0; file_index < subdir->num_files; file_index++)
 	{
 		json_t *curr = json_array_get(subdir->FileList, file_index);

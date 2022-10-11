@@ -35,6 +35,7 @@ struct Get_Result
 {
 	enum Result_Type type;
 	SubDirectory * subdirectory;
+	SubDirectory * prev;	//special case for subdir_find_file
 	
 };
 typedef struct Get_Result Get_Result;
@@ -43,6 +44,6 @@ Get_Result * get_subdirectory(int drive_index, char * path);
 
 int insert_subdirectory(int drive_index, SubDirectory * subdir);
 
-
+json_t * subdir_find_file(int drive_index, char * path);
 SubDirectory * SubDirectory_create(char * name);
 void dump_subdirectory(SubDirectory * subdir, int indent);

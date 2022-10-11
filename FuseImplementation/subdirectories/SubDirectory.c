@@ -69,6 +69,43 @@ void dump_subdirectory(SubDirectory * subdir, int indent)
 	free(indents);
 }
 
+json_t * subdir_find_file(int drive_index, char * path)
+{
+	Get_Result * folder = get_subdirectory(drive_index, path);
+	if (folder->type == ERROR)
+	{
+		fuse_log_error("Couldn't find subdirectory while searching for the file: %s\n", path);
+		return NULL;
+	}
+	if (folder->subdirectory == NULL)
+	{
+		if (folder->type == ROOT)
+		{
+			//This is what we expect in the NULL case (for now)
+			//For files like .hidden, we don't represent it so it fails to find
+			return NULL;
+		}
+		else
+		{
+			fuse_log_error("Failed in a case where we do not expect failure...\n");
+			return NULL;
+		}
+		
+	}
+	if (folder->type == THIS)
+	{
+		if (folder->prev == NULL)
+		{
+			fuse_log_error("Error in special case\n");
+			return NULL;
+		}
+		return SubDirectory_find_file(folder->prev, path);
+	}
+
+	return SubDirectory_find_file(folder->subdirectory, path);
+	
+}
+
 json_t * SubDirectory_find_file(SubDirectory * dir, char * path)
 {
 	for (int i = 0; i < dir->num_files; i++)
@@ -105,7 +142,7 @@ SubDirectory * find_subdirectory(struct list * subdirectory_list, char * relativ
 
 
 
-void __get_subdirectory(Get_Result * result, SubDirectory * dir, char ** tokens)
+void __get_subdirectory(Get_Result * result, SubDirectory * dir, char ** tokens, SubDirectory * prev)
 {
 	//fuse_log("In __get_subdirectory!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 	//fuse_log("token: %s\n", *tokens);
@@ -113,6 +150,7 @@ void __get_subdirectory(Get_Result * result, SubDirectory * dir, char ** tokens)
 	{
 		result->type = THIS;
 		result->subdirectory = dir;
+		result->prev = prev;
 		//fuse_log("tokens was null\n");
 		return;
 	}
@@ -125,7 +163,7 @@ void __get_subdirectory(Get_Result * result, SubDirectory * dir, char ** tokens)
 		return;
 	}
 	//Keep searching
-	__get_subdirectory(result, next, tokens + 1);
+	__get_subdirectory(result, next, tokens + 1, dir);
 	
 }
 
@@ -161,7 +199,7 @@ Get_Result * get_subdirectory(int drive_index, char * path)
 	}
 	else {
 		fuse_log("Found the first subdirectory!!!\n");
-		__get_subdirectory(result, first, tokens + 2);
+		__get_subdirectory(result, first, tokens + 2, NULL);
 	}
 	
 	
