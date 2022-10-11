@@ -9,7 +9,7 @@ SubDirectory * SubDirectory_create(char * name)
 	strcpy(&(ret->dirname[0]), name);
 	list_init(&(ret->subdirectories_list));
 	
-	//Find relative dirname
+	/******* Get relative dirname *********/
 	char * cpy = name;
 	char * last_slash = NULL;
 	while (*cpy != '\0')
@@ -30,7 +30,8 @@ SubDirectory * SubDirectory_create(char * name)
 	{
 		strcpy(&(ret->rel_dirname[0]), last_slash);
 	}
-	//-----------------------
+	/**************************************/
+	
 	return ret;
 	
 }
@@ -94,6 +95,8 @@ json_t * subdir_find_file(int drive_index, char * path)
 	}
 	if (folder->type == THIS)
 	{
+		/** When we are trying to find a file that IS a subdirectory **/
+		/** ... then we need to search that subdirectories PARENT, not itself **/
 		if (folder->prev == NULL)
 		{
 			fuse_log_error("Error in special case\n");

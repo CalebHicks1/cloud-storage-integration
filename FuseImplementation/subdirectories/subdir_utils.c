@@ -18,7 +18,6 @@ char ** split(char * path)
 		*(cpy_ret) = calloc(sizeof(char), strlen(token) + 1);
 		strcpy(*cpy_ret, token);
 		cpy_ret++;
-		//fuse_log("token: %s\n", token);
 		token = strtok(NULL, "/");
 	}
 	
