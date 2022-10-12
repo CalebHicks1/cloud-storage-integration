@@ -79,7 +79,7 @@ void dump_subdirectory(SubDirectory * subdir, int indent)
  * (1) Get the subdirectory corresponding to the path 
  * (2) Search that subdirectory for the file, if applicable
  */
-json_t * subdir_find_file(int drive_index, char * path)
+json_t * Subdirectory_find_file(int drive_index, char * path)
 {
 	Get_Result * folder = get_subdirectory(drive_index, path);
 	if (folder->type == ERROR)
@@ -106,15 +106,15 @@ json_t * subdir_find_file(int drive_index, char * path)
 	{
 		/** When we are trying to find a file that IS a subdirectory **/
 		/** ... then we need to search that subdirectories PARENT, not itself **/
-		if (folder->prev == NULL)
+		if (folder->parent == NULL)
 		{
 			fuse_log_error("Error in special case\n");
 			return NULL;
 		}
-		return SubDirectory_find_file(folder->prev, path);
+		return SubDirectory_find_file_in_dir(folder->parent, path);
 	}
 
-	return SubDirectory_find_file(folder->subdirectory, path);
+	return SubDirectory_find_file_in_dir(folder->subdirectory, path);
 	
 }
 
@@ -123,7 +123,7 @@ json_t * subdir_find_file(int drive_index, char * path)
  * Search a SINGLE subdirectory for file specified by "path",
  * where "path" is an absolute path
  */
-json_t * SubDirectory_find_file(SubDirectory * dir, char * path)
+json_t * SubDirectory_find_file_in_dir(SubDirectory * dir, char * path)
 {
 	for (int i = 0; i < dir->num_files; i++)
 	{
@@ -169,7 +169,7 @@ void __get_subdirectory(Get_Result * result, SubDirectory * dir, char ** tokens,
 	{
 		result->type = THIS;
 		result->subdirectory = dir;
-		result->prev = prev;
+		result->parent = prev;
 		return;
 	}
 	SubDirectory * next = find_subdirectory(&(dir->subdirectories_list), *tokens);
@@ -187,6 +187,7 @@ void __get_subdirectory(Get_Result * result, SubDirectory * dir, char ** tokens,
 /**
  * Return subdirectory identified by path or the subdirectory that does/would
  * contain the file specified by path
+ * (SEE HEADER FOR DETAILS)
  */
 Get_Result * get_subdirectory(int drive_index, char * path)
 {

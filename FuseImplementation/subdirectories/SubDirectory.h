@@ -12,6 +12,25 @@
 #include "../JsonTools.h"
 #include "../list/list.h"
 #define LEN_DIRNAME 200
+
+/**
+ * Example:
+ * dirname = /drive/folder/folder/this
+ * rel_dirname = this
+ * FileList = 
+ * {
+ * 		file.txt,
+ * 		file.txt,
+ * 		another_dir1
+ * 		another_dir2
+ * }
+ * num_files = 4
+ * subdirectories_list = 
+ * {
+ * {dirname = another_dir1, ...}
+ * {dirname = another_dir2, ...}
+ * }
+ */
 struct SubDirectory 
 {
 	struct list_elem elem;
@@ -37,17 +56,33 @@ struct Get_Result
 {
 	enum Result_Type type;
 	SubDirectory * subdirectory;
-	SubDirectory * prev;	//special case for subdir_find_file
+	SubDirectory * parent; //Case (1) below
 	
 };
 typedef struct Get_Result Get_Result;
-json_t * SubDirectory_find_file(SubDirectory * dir, char * path);
-Get_Result * get_subdirectory(int drive_index, char * path);
+//Finding things
+json_t * Subdirectory_find_file(int drive_index, char * path);	//Find a file that exists in some subdirectory in drive 
+json_t * SubDirectory_find_file_in_dir(SubDirectory * dir, char * path);	//Find a file residiing within a single subdirectory (not its children)
 
+//For the file specified by path, find (1) the subdirectory that IS that file, (2) the subdirectory CONTAINING that file, or (3) 
+/**
+ * For the file specified by path, find 
+ * (1) The subdirectory that IS that file
+ * 		Set Result->parent to be the parent of said subdirectory
+ * (2) The subdirectory CONTAINING that file
+ * or
+ * (3) Return NULL if the file resides in the root directory of the drive, not 
+ * in a subdirectory
+ */
+Get_Result * get_subdirectory(int drive_index, char * path);	
+
+//Place a newly generated subdirectory in a drive
 int insert_subdirectory(int drive_index, SubDirectory * subdir);
 
-json_t * subdir_find_file(int drive_index, char * path);
+//"Constructor" - just initializes names and list, nothing else
 SubDirectory * SubDirectory_create(char * name);
+
+//Essentially gives the output of "tree" (which honestly is probably more useful for debugging)
 void dump_subdirectory(SubDirectory * subdir, int indent);
 
 #endif

@@ -56,7 +56,7 @@ json_t *get_file(int drive_index, char *path)
 	}
 	// Check subdirectories
 	
-	json_t * file = subdir_find_file(drive_index, path);
+	json_t * file = Subdirectory_find_file(drive_index, path);
 	if (file == NULL)
 	{
 		fuse_log_error("Could not find file %s\n", path);
