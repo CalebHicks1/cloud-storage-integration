@@ -64,7 +64,6 @@ typedef struct Get_Result Get_Result;
 json_t * Subdirectory_find_file(int drive_index, char * path);	//Find a file that exists in some subdirectory in drive 
 json_t * SubDirectory_find_file_in_dir(SubDirectory * dir, char * path);	//Find a file residiing within a single subdirectory (not its children)
 
-//For the file specified by path, find (1) the subdirectory that IS that file, (2) the subdirectory CONTAINING that file, or (3) 
 /**
  * For the file specified by path, find 
  * (1) The subdirectory that IS that file
