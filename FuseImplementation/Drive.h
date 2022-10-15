@@ -64,7 +64,7 @@ int listAsArray(json_t** list, char* cmd, char * optional_path, int in, int out)
 
 //Subdirectories
 int get_subdirectory_contents(json_t ** list, int drive_index,  char *path, int in, int out);
-Sub_Directory * handle_subdirectory(char * path);
+SubDirectory * handle_subdirectory(char * path);
 
 //Interal helpers
 int is_drive(const char *path);

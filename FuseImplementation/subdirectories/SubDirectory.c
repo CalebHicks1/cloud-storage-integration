@@ -81,6 +81,7 @@ void dump_subdirectory(SubDirectory * subdir, int indent)
  */
 json_t * Subdirectory_find_file(int drive_index, char * path)
 {
+	fuse_log("Called for %s\n", path);
 	Get_Result * folder = get_subdirectory(drive_index, path);
 	if (folder->type == ERROR)
 	{
@@ -104,6 +105,7 @@ json_t * Subdirectory_find_file(int drive_index, char * path)
 	}
 	if (folder->type == THIS)
 	{
+		fuse_log_error("searching here\n");
 		/** When we are trying to find a file that IS a subdirectory **/
 		/** ... then we need to search that subdirectories PARENT, not itself **/
 		if (folder->parent == NULL)
@@ -111,9 +113,10 @@ json_t * Subdirectory_find_file(int drive_index, char * path)
 			fuse_log_error("Error in special case\n");
 			return NULL;
 		}
+		fuse_log("Searching for file in: %s\n", folder->parent->dirname);
 		return SubDirectory_find_file_in_dir(folder->parent, path);
 	}
-
+	fuse_log("searching %s\n", folder->subdirectory->dirname);
 	return SubDirectory_find_file_in_dir(folder->subdirectory, path);
 	
 }
@@ -167,14 +170,18 @@ void __get_subdirectory(Get_Result * result, SubDirectory * dir, char ** tokens,
 {
 	if (*tokens == NULL)
 	{
+		fuse_log("this case\n");
 		result->type = THIS;
 		result->subdirectory = dir;
 		result->parent = prev;
 		return;
 	}
+	dump_subdirectory(dir, 0);
 	SubDirectory * next = find_subdirectory(&(dir->subdirectories_list), *tokens);
 	if (next == NULL)
 	{
+		fuse_log("%s\n", *tokens);
+		fuse_log("element case\n");
 		result->type = ELEMENT;
 		result->subdirectory = dir;
 		return;
@@ -200,6 +207,21 @@ Get_Result * get_subdirectory(int drive_index, char * path)
 	{
 		fuse_log("Determined it should go at root directory\n");
 		result->type = ROOT;
+		if (count_tokens(tokens) == 2)
+		{
+			fuse_log_error("Getting from root directory\n");
+			result->subdirectory = find_subdirectory(&Drives[drive_index].subdirectories_list, *(tokens + 1));
+			if (result->subdirectory != NULL)
+			{
+				fuse_log_error("Successful!!!!!\n");
+			}
+			else
+			{
+				fuse_log_error("Failed....\n");
+				
+			}
+			return result;
+		}
 		return result;
 	}
 	
@@ -218,6 +240,7 @@ Get_Result * get_subdirectory(int drive_index, char * path)
 	else {
 		fuse_log("Found the first subdirectory!!!\n");
 		__get_subdirectory(result, first, tokens + 2, NULL);
+		return result;
 	}
 	
 	

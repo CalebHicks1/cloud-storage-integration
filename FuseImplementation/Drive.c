@@ -62,7 +62,7 @@ json_t *get_file(int drive_index, char *path)
 		fuse_log_error("Could not find file %s\n", path);
 		return NULL;
 	}
-	fuse_log("We found the file!!!!!\n");
+	fuse_log("We found the file %s!!!!!\n", path);
 	return file;
 	//Sub_Directory *dir = __get_subdirectory_for_path(drive_index, path);
 	//if (dir != NULL)
@@ -188,7 +188,7 @@ int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in
  * If subdirectory exists, return it. If not, generate it, and add it
  * to the list of the Drive's subdirectories
  */
-Sub_Directory *handle_subdirectory(char *path)
+SubDirectory *handle_subdirectory(char *path)
 {
 	fuse_log("Called for %s\n", path);
 	int drive_index = get_drive_index(path);
@@ -198,15 +198,33 @@ Sub_Directory *handle_subdirectory(char *path)
 		fuse_log_error("Drive not found for subdirectory %s\n", path);
 		return NULL;
 	}
-
+	
+	bool shouldExist = false;
 	for (int i = 0; i < Drives[drive_index].num_sub_directories; i++)
 	{
 		if (strcmp(Drives[drive_index].sub_directories[i].dirname, path) == 0)
 		{
-			fuse_log("Subdirectory %s already exists... returning it\n", path);
-			return &Drives[drive_index].sub_directories[i];
+			fuse_log("Subdirectory %s already exists in old list...\n", path);
+			shouldExist = true;
+			//return &Drives[drive_index].sub_directories[i];
 		}
 	}
+	Get_Result * ret = get_subdirectory(drive_index, path);
+	SubDirectory * alreadyExists = ret->subdirectory;
+	if (shouldExist && (alreadyExists == NULL))
+	{
+		
+		fuse_log_error("bruh\n");
+		exit(1);
+	}
+	if ((ret->type == THIS ) && (alreadyExists != NULL))
+	{
+		fuse_log("Subdirectory %s already exists, returning it\n", path);
+		dump_subdirectory(alreadyExists, 0);
+		return alreadyExists;
+		
+	}
+	
 	// Generate the subdirectory
 	fuse_log("Need to generate subdirectory %s...\n", path);
 
@@ -243,7 +261,7 @@ Sub_Directory *handle_subdirectory(char *path)
 	fuse_log("Getting files for new subdirectory structure\n");
 	new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path, Drives[drive_index].in, Drives[drive_index].out);
 	
-	return new_directory;
+	return new;
 }
 
 /**

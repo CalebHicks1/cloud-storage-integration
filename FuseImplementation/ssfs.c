@@ -233,14 +233,23 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 	else
 	{ // Then this *should* be a subdirectory
 		fuse_log("This should be a subdirectory: %s\n", path);
-		Sub_Directory *dir = handle_subdirectory((char *)path);
+		SubDirectory *dir = handle_subdirectory((char *)path);
 		if (dir != NULL)
 		{
+			fuse_log("Directory returned: %s\n", dir->dirname);
+			fuse_log("Dir needed: %s\n", path);
+			if (strcmp(dir->dirname, path) != 0)
+			{
+				fuse_log_error("fatal\n");
+				exit(1);
+				
+			}
 			for (size_t index = 0; index < dir->num_files; index++)
 			{
 				const char *fileName = getJsonFileName(json_array_get(dir->FileList, index));
 				if (fileName != NULL)
 				{
+					fuse_log("Adding %s\n", fileName);
 					filler(buffer, fileName, NULL, 0);
 				}
 				else
