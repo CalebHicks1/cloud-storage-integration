@@ -14,11 +14,11 @@ void dump_drive(Drive_Object * drive)
 		return;
 	}
 	//This Drives attributes
-	printf("| %s (%d files)\n", &(drive->dirname[0]), drive->num_files);
+	fuse_log("| %s (%d files)\n", &(drive->dirname[0]), drive->num_files);
 	//Files
 	for (int i = 0; i < drive->num_files; i++) {
 		json_t * curr_file = json_array_get(drive->FileList, i);
-		printf("|--- %s\n", getJsonFileName(curr_file));
+		fuse_log("|--- %s\n", getJsonFileName(curr_file));
 	}
 	
 	//Old subdirectories
@@ -60,6 +60,7 @@ json_t *get_file(int drive_index, char *path)
 	if (file == NULL)
 	{
 		fuse_log_error("Could not find file %s\n", path);
+		dump_drive(&Drives[0]);
 		return NULL;
 	}
 	fuse_log("We found the file %s!!!!!\n", path);
@@ -191,37 +192,52 @@ int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in
 SubDirectory *handle_subdirectory(char *path)
 {
 	fuse_log("Called for %s\n", path);
+	fuse_log_error("Called for %s\n", path);
 	int drive_index = get_drive_index(path);
 
+	dump_drive(&Drives[drive_index]);
 	if (drive_index < 0)
 	{
 		fuse_log_error("Drive not found for subdirectory %s\n", path);
 		return NULL;
 	}
 	
-	bool shouldExist = false;
-	for (int i = 0; i < Drives[drive_index].num_sub_directories; i++)
-	{
-		if (strcmp(Drives[drive_index].sub_directories[i].dirname, path) == 0)
-		{
-			fuse_log("Subdirectory %s already exists in old list...\n", path);
-			shouldExist = true;
-			//return &Drives[drive_index].sub_directories[i];
-		}
-	}
+	
 	Get_Result * ret = get_subdirectory(drive_index, path);
-	SubDirectory * alreadyExists = ret->subdirectory;
-	if (shouldExist && (alreadyExists == NULL))
+	//(ret->type == THIS )
+	if (ret->subdirectory != NULL && ret->type != ELEMENT)
 	{
-		
-		fuse_log_error("bruh\n");
-		exit(1);
-	}
-	if ((ret->type == THIS ) && (alreadyExists != NULL))
-	{
+		if (ret->type == ELEMENT)
+		{
+			fuse_log("Is element!!!!!!!\n");
+		}
 		fuse_log("Subdirectory %s already exists, returning it\n", path);
-		dump_subdirectory(alreadyExists, 0);
-		return alreadyExists;
+		return ret->subdirectory;
+	}
+	else
+	{
+		if (ret->subdirectory == NULL)
+		{
+			fuse_log_error("was null\n");
+			fuse_log_error("type: %d\n", ret->type);
+			
+		}
+		else
+		{
+			fuse_log_error("wasnt null\n");
+			if (ret->type == ELEMENT)
+			{
+				fuse_log_error("was element\n");
+				
+			}
+			else 
+			{
+				fuse_log_error("WASNT element\n");
+				fuse_log_error("Type: %d\n", ret->type);
+				
+			}
+			
+		}
 		
 	}
 	
@@ -258,7 +274,7 @@ SubDirectory *handle_subdirectory(char *path)
 	//Insert subdirectory
 	insert_subdirectory(drive_index, new);
 	//Insert files 
-	fuse_log("Getting files for new subdirectory structure\n");
+	fuse_log("Getting files for new subdirectory structure: %s\n", path);
 	new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path, Drives[drive_index].in, Drives[drive_index].out);
 	
 	return new;

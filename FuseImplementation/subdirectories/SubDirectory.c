@@ -54,12 +54,12 @@ void dump_subdirectory(SubDirectory * subdir, int indent)
 		*(indents + i) = '\t';
 	}
 	//Print *this* subdirectories attributes
-	printf("%s|--- [%s] (%s) (files: %d)\n", indents, subdir->rel_dirname, subdir->dirname, subdir->num_files);
+	fuse_log("%s|--- [%s] (%s) (files: %d)\n", indents, subdir->rel_dirname, subdir->dirname, subdir->num_files);
 	
 	//Print files
 	for (int i = 0; i < subdir->num_files; i++) {
 		json_t * curr_file = json_array_get(subdir->FileList, i);
-		printf("\t%s|--- %s\n", indents, getJsonFileName(curr_file));
+		fuse_log("\t%s|--- %s\n", indents, getJsonFileName(curr_file));
 	}
 	
 	//dump sub-subdirectories
@@ -151,11 +151,14 @@ json_t * SubDirectory_find_file_in_dir(SubDirectory * dir, char * path)
 SubDirectory * find_subdirectory(struct list * subdirectory_list, char * relative_path)
 {
 	struct list_elem *e;
+	fuse_log("starting\n");
 	for (e = list_begin(subdirectory_list); e != list_end(subdirectory_list); e = list_next(e))
 	{
 		SubDirectory * curr = list_entry(e, struct SubDirectory, elem);
+		fuse_log("curr: %s\n", curr->dirname);
 		if (strcmp(curr->rel_dirname, relative_path) == 0)
 		{
+			
 			return curr;
 		}
 		
@@ -217,6 +220,7 @@ Get_Result * get_subdirectory(int drive_index, char * path)
 			}
 			else
 			{
+				result->subdirectory = NULL;
 				fuse_log_error("Failed....\n");
 				
 			}
