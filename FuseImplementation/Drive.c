@@ -14,11 +14,11 @@ void dump_drive(Drive_Object * drive)
 		return;
 	}
 	//This Drives attributes
-	fuse_log("| %s (%d files)\n", &(drive->dirname[0]), drive->num_files);
+	printf("| %s (%d files)\n", &(drive->dirname[0]), drive->num_files);
 	//Files
 	for (int i = 0; i < drive->num_files; i++) {
 		json_t * curr_file = json_array_get(drive->FileList, i);
-		fuse_log("|--- %s\n", getJsonFileName(curr_file));
+		printf("|--- %s\n", getJsonFileName(curr_file));
 	}
 	
 	//Old subdirectories
@@ -254,19 +254,19 @@ SubDirectory *handle_subdirectory(char *path)
 		fuse_log_error("Could not parse relative path for %s\n", path);
 		return NULL;
 	}
-	Sub_Directory *new_directory = &(Drives[drive_index].sub_directories[Drives[drive_index].num_sub_directories]);
-	int num_files = get_subdirectory_contents(&(new_directory->FileList), drive_index, relative_path, Drives[drive_index].in, Drives[drive_index].out);
-	if (num_files < 0)
-	{
-		fuse_log_error("Problem getting subdirectory contents\n");
-	}
-	new_directory->num_files = num_files;
-	sprintf(&(new_directory->dirname[0]), "%s", path);
-	new_directory->self = json_object();
-	json_object_set(new_directory->self, "Name", json_string(path));
-	json_object_set(new_directory->self, "Size", json_integer(0));
-	json_object_set(new_directory->self, "IsDir", json_string("true"));
-	Drives[drive_index].num_sub_directories++;
+	//Sub_Directory *new_directory = &(Drives[drive_index].sub_directories[Drives[drive_index].num_sub_directories]);
+	//int num_files = get_subdirectory_contents(&(new_directory->FileList), drive_index, relative_path, Drives[drive_index].in, Drives[drive_index].out);
+	//if (num_files < 0)
+	//{
+		//fuse_log_error("Problem getting subdirectory contents\n");
+	//}
+	//new_directory->num_files = num_files;
+	//sprintf(&(new_directory->dirname[0]), "%s", path);
+	//new_directory->self = json_object();
+	//json_object_set(new_directory->self, "Name", json_string(path));
+	//json_object_set(new_directory->self, "Size", json_integer(0));
+	//json_object_set(new_directory->self, "IsDir", json_string("true"));
+	//Drives[drive_index].num_sub_directories++;
 	
 	//New subdirectory version!
 	//Create directory

@@ -15,16 +15,16 @@
 
 #define LEN_DIRNAME 200
 #define LEN_EXEC_PATH 200
-#define NUM_SUBDIRS 20
-struct Sub_Directory
-{
-	char dirname[LEN_DIRNAME];
-	json_t *FileList;
-	int num_files;
-	json_t * self;	//"self" is actually unecessary but will leave it in
-					//in case it's needed later
-};
-typedef struct Sub_Directory Sub_Directory;
+//#define NUM_SUBDIRS 20
+//struct Sub_Directory
+//{
+	//char dirname[LEN_DIRNAME];
+	//json_t *FileList;
+	//int num_files;
+	//json_t * self;	//"self" is actually unecessary but will leave it in
+					////in case it's needed later
+//};
+//typedef struct Sub_Directory Sub_Directory;
 
 //-------------------------- New subdirectory
 
@@ -39,7 +39,7 @@ struct Drive_Object
 	pid_t pid;
 	char exec_path[LEN_EXEC_PATH];
 	int num_files;
-	Sub_Directory sub_directories[NUM_SUBDIRS];
+	//Sub_Directory sub_directories[NUM_SUBDIRS];
 	int num_sub_directories;
 	
 	

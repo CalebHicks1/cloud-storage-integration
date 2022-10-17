@@ -32,28 +32,115 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 static int do_getattr(const char *path, struct stat *st);
 static int do_read(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi);
 static void split_path_file(char **pathBuffer, char **filenameBuffer, char *fullPath);
-static struct fuse_operations operations = {
-	.getattr = do_getattr,
-	.readdir = do_readdir,
-	.read = do_read,
-};
+static int xmp_create(const char *path, mode_t mode,
+		      struct fuse_file_info *fi);
 
 /*Global varibales and structs ***********************************/
 
 struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
 	{
-		{"Google_Drive", NULL, -1, -1, -1, "../src/API/google_drive/google_drive_client", 0, {}, 0},
+		{"Google_Drive", NULL, -1, -1, -1, "../src/API/google_drive/google_drive_client", 0, /*{},*/ 0},
 		{"NFS", NULL, -1, -1, -1, "../src/API/NFS/nfs_api", 0}
 
 		// {"Test_Dir", NULL, -1, "./getFile", 0, {}, 0}
 };
-struct Drive_Object CacheDrive = {"Ramdisk", NULL, -1, -1, -1, "../src/API/ramdisk/ramdisk_client", 0, {}, 0};
+struct Drive_Object CacheDrive = {"Ramdisk", NULL, -1, -1, -1, "../src/API/ramdisk/ramdisk_client", 0, /*{},*/ 0};
 const char *CacheFile = "/mnt/ramdisk/";
 
 /**********************************************************/
 
 /*Main function and Drive functions ***********************/
 
+
+#ifdef HAVE_UTIMENSAT
+static int xmp_utimens(const char *path, const struct timespec ts[2],
+		       struct fuse_file_info *fi)
+{
+	(void) fi;
+	int res;
+
+	/* don't use utime/utimes since they follow symlinks */
+	res = utimensat(0, path, ts, AT_SYMLINK_NOFOLLOW);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+#endif
+
+static int xmp_create(const char *path, mode_t mode,
+		      struct fuse_file_info *fi)
+{
+	fuse_log("create\n");
+	fuse_log_error("createeeeeeeee\n");
+	int res;
+
+	res = open(path, fi->flags, mode);
+	if (res == -1)
+		return -errno;
+
+	fi->fh = res;
+	return 0;
+}
+
+static int xmp_open(const char *path, struct fuse_file_info *fi)
+{
+	int res;
+
+	res = open(path, fi->flags);
+	if (res == -1)
+		return -errno;
+
+	fi->fh = res;
+	return 0;
+}
+
+static int xmp_mknod(const char *path, mode_t mode, dev_t rdev)
+{
+	int res;
+	printf("mknod\n");
+
+	//res = mknod_wrapper(AT_FDCWD, path, NULL, mode, rdev);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
+static int xmp_access(const char *path, int mask)
+{
+	printf("xmp_access\n");
+	int res;
+
+	res = access(path, mask);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
+static int xmp_release(const char *path, struct fuse_file_info *fi)
+{
+	printf("release\n");
+	(void) path;
+	close(fi->fh);
+	return 0;
+}
+
+
+static struct fuse_operations operations = {
+	.getattr = do_getattr,
+	.readdir = do_readdir,
+	.read = do_read,
+	#ifdef HAVE_UTIMENSAT
+	.utimens	= xmp_utimens,
+	#endif
+	.open		= xmp_open,
+	.create 	= xmp_create,
+	.mknod		= xmp_mknod,
+	//.access = xmp_access,
+	.release = xmp_release
+};
 /*
  * main calls getFileList, if successful main sets global variables and starts fuse_main
  *
@@ -122,7 +209,7 @@ static int do_getattr(const char *path, struct stat *st)
 		if (file == NULL)
 		{
 			fuse_log_error("Could not find file %s\n", path);
-			return -1;
+			return -2;
 		}
 
 		json_t *isDir = json_object_get(file, "IsDir");

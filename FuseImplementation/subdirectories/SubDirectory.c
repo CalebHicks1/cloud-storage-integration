@@ -54,12 +54,12 @@ void dump_subdirectory(SubDirectory * subdir, int indent)
 		*(indents + i) = '\t';
 	}
 	//Print *this* subdirectories attributes
-	fuse_log("%s|--- [%s] (%s) (files: %d)\n", indents, subdir->rel_dirname, subdir->dirname, subdir->num_files);
+	printf("%s|--- [%s] (%s) (files: %d)\n", indents, subdir->rel_dirname, subdir->dirname, subdir->num_files);
 	
 	//Print files
 	for (int i = 0; i < subdir->num_files; i++) {
 		json_t * curr_file = json_array_get(subdir->FileList, i);
-		fuse_log("\t%s|--- %s\n", indents, getJsonFileName(curr_file));
+		printf("\t%s|--- %s\n", indents, getJsonFileName(curr_file));
 	}
 	
 	//dump sub-subdirectories
