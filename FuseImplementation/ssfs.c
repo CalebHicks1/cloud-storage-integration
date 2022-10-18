@@ -35,6 +35,10 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 static void split_path_file(char **pathBuffer, char **filenameBuffer, char *fullPath);
 static int xmp_create(const char *path, mode_t mode,
 		      struct fuse_file_info *fi);
+static int do_write(const char *path, const char *buffer, size_t size, off_t offset, struct fuse_file_info *fi);
+static int xmp_write(const char *path, const char *buf, size_t size,
+					 off_t offset, struct fuse_file_info *fi);
+
 
 /*Global varibales and structs ***********************************/
 
@@ -116,9 +120,32 @@ static int xmp_create(const char *path, mode_t mode,
 		fuse_log_error("Insert failed\n");
 		return -errno;
 	}
-		
 
-	fi->fh = res;
+
+	char cwd[512];
+	if (getcwd(cwd, sizeof(cwd)) != NULL)
+	{
+		fuse_log_error("Current working dir: %s\n", cwd);
+	}
+	else
+	{
+		perror("getcwd() error");
+		return -1;
+	}
+
+	char *cachePath = strcat(cwd, CacheFile);
+	char* filePath = strcat(cachePath, *tokens);
+	FILE *file = fopen(filePath, "a");
+//res = open(writeFilePathLocal, fi->flags, mode);
+if (file == NULL)
+	{
+		fuse_log_error("Insert failed\n");
+		return -errno;
+	}
+
+	
+
+	//fi->fh = res;
 	return 0;
 }
 
@@ -178,7 +205,8 @@ static struct fuse_operations operations = {
 	.create 	= xmp_create,
 	.mknod		= xmp_mknod,
 	//.access = xmp_access,
-	.release = xmp_release
+	.release = xmp_release,
+	.write = do_write,
 };
 /*
  * main calls getFileList, if successful main sets global variables and starts fuse_main
@@ -194,7 +222,7 @@ int main(int argc, char *argv[])
 	int in;	 // fd to write to executable
 
 	//
-	fuse_log("running module at %s\n", CacheDrive.exec_path);
+	/*fuse_log("running module at %s\n", CacheDrive.exec_path);
 	int success = spawn_module(&in, &out, &CacheDrive.pid, CacheDrive.exec_path);
 	if (success == 0)
 	{
@@ -205,9 +233,9 @@ int main(int argc, char *argv[])
 	{
 		fuse_log_error("Cache did not start started");
 		return -1;
-	}
+	}*/
 	populate_filelists();
-	dump_drive(&(Drives[0]));
+	//dump_drive(&(Drives[0]));
 	// To-Do:Catch Ctrl-c and kill processes
 	return fuse_main(argc, argv, &operations, NULL);
 }
@@ -436,6 +464,10 @@ static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 	return res;
 }
 
+
+
+
+
 static int do_read(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi)
 {
 	fuse_log("--> Trying to read %s, %lu, %lu\n", path, offset, size);
@@ -451,12 +483,6 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		return -1;
 	}
 
-	/*
-	if (is_process_running(CacheDrive.pid)){
-		fuse_log_error("Cache not running\n");
-		//return -1;
-	}
-*/
 	char *downloadFile = strcat(cwd, CacheFile);
 
 	char *pathcpy = strdup(path);
@@ -464,8 +490,134 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 	char *filename = calloc(strlen(pathcpy), sizeof(char));
 
 	split_path_file(&pathBuffer, &filename, pathcpy);
-	fuse_log_error("%s\n", pathBuffer);
+
 	// char* downloadFolder= strcat(downloadFile,filename);
+
+	if (is_drive(pathBuffer) == 0)
+	{ // File is requested straight from drive
+
+		int index = get_drive_index(pathBuffer);
+		if (index < 0)
+		{
+			fuse_log_error("Error in get_drive_index\n");
+			free(pathBuffer);
+			free(filename);
+			return -1;
+		}
+		Drive_Object currDrive = Drives[index];
+
+		// Ensuring we are selecting the proper drive to request the file from
+		fuse_log_error("The drive chosen is %s\n", currDrive.dirname);
+		if (!is_process_running(currDrive.pid))
+		{
+			fuse_log_error("Drive api was closed\n");
+			free(pathBuffer);
+			free(filename);
+			return -1;
+		}
+		char *downloadFile2 = strdup(downloadFile);
+		char *cachePath = strcat(downloadFile2, filename);
+	//	if (access(cachePath, F_OK) == -1)
+//		{
+			// do nothing - making sure file is found
+
+			// Send download request to the proper api's stdin
+			dprintf(currDrive.in, "{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
+			fuse_log_error("{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
+
+			// Should wait for output from the api, currently just blocks forever
+			char buff[4];
+			int count = 0;
+			while (1)
+			{
+				if (read(currDrive.out, buff, 4) > 0)
+				{
+
+					if (strncmp(buff, "{0}", 3) == 0)
+					{
+
+						fuse_log_error("Successfully downloaded %s\n", buff);
+
+						while (access(cachePath, F_OK) == -1)
+						{
+							// do nothing - making sure file is found
+						}
+
+						return xmp_read(cachePath, buffer, size, offset, fi);
+					}
+					else if (strncmp(buff, "{", 1) == 0)
+					{
+						fuse_log_error("Unsuccessfully downloaded %s\n", buff);
+						return -1;
+					}
+				}
+			}
+		//}
+		/*
+		{
+			fuse_log_error(cachePath);
+			return xmp_read(cachePath, buffer, size, offset, fi);
+		}*/
+	}
+
+	else if (strlen(pathBuffer) == 0)
+	{
+		// File is requested from home directory
+		// There currently cannot be any files in home directory so we will implement this later
+		fuse_log_error("File does not exist\n");
+	}
+	else
+	{
+		// File is requested from subdirector
+		fuse_log_error("Subdirectory\n");
+	}
+
+	return 0;
+}
+
+
+
+
+
+
+static int do_write(const char *path, const char *buffer, size_t size, off_t offset, struct fuse_file_info *fi)
+{
+	fuse_log("--> Trying to write %s, %lu, %lu\n", path, offset, size);
+
+	char cwd[512];
+	if (getcwd(cwd, sizeof(cwd)) != NULL)
+	{
+		fuse_log_error("Current working dir: %s\n", cwd);
+	}
+	else
+	{
+		perror("getcwd() error");
+		return -1;
+	}
+
+
+	char *writeFilePathLocal = strcat(cwd, CacheFile);
+	fuse_log_error("Write file path - %s\n",writeFilePathLocal);
+
+
+
+	char *pathcpy = strdup(path);
+	char *pathBuffer = calloc(strlen(pathcpy), sizeof(char));
+	char *filename = calloc(strlen(pathcpy), sizeof(char));
+
+	split_path_file(&pathBuffer, &filename, pathcpy);
+
+	char* remoteFilePath = parse_out_drive_name(pathBuffer);
+	fuse_log_error("%s\n", remoteFilePath);
+
+	//char *cachePath = strcat(writeFilePath, filename);
+
+	
+	fuse_log_error("path buffer -%s\n", pathBuffer);
+	char *fullFileName = strcat(writeFilePathLocal, filename);
+//	fuse_log_error("Cache path - %s\n",cachePath);
+	// char* downloadFolder= strcat(downloadFile,filename);
+	int i =  xmp_write(fullFileName, buffer, size, offset, fi);
 
 	if (is_drive(pathBuffer) == 0)
 	{ // File is requested straight from drive
@@ -491,71 +643,34 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		}
 
 		// Send download request to the proper api's stdin
-		dprintf(currDrive.in, "{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
-		fuse_log_error("{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
+		//{"command":"upload","path":"<valid_path>","files":["<filename1>", "<filename2>", ...]}
+		dprintf(currDrive.in, "{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, fullFileName);
+		fuse_log_error("{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, fullFileName);
 
-		// Should wait for output from the api, currently just blocks forever
-		char buff[4];
-		int count = 0;
-		while (1)
-		{
-			if (read(currDrive.out, buff, 4) > 0)
-			{
-
-				if (strncmp(buff, "{0}", 3) == 0)
-				{
-
-					fuse_log_error("Successfully downloaded %s\n", buff);
-
-					char *cachePath = strcat(downloadFile, filename);
-
-					while (access(cachePath, F_OK) == -1)
-					{
-						// do nothing - making sure file is found
-					}
-
-					return xmp_read(cachePath, buffer, size, offset, fi);
-				}
-				else if (strncmp(buff, "{", 1) == 0)
-				{
-					fuse_log_error("Unsuccessfully downloaded %s\n", buff);
-					return -1;
-				}
-			}
-		}
+		
 	}
-
-	else if (strlen(pathBuffer) == 0)
-	{
-		// File is requested from home directory
-		// There currently cannot be any files in home directory so we will implement this later
-		fuse_log_error("File does not exist\n");
-	}
-	else
-	{
-		// File is requested from subdirector
-		fuse_log_error("Subdirectory\n");
-	}
-
+	return i;
+		
 	return 0;
+}
 
-	/*
-	char file54Text[] = "Hello World From File54!";
-	char file349Text[] = "Hello World From File349!";
-	char *selectedText = NULL;
 
-	// ... //
 
-	if (strcmp(path, "/file54") == 0)
-		selectedText = file54Text;
-	else if (strcmp(path, "/file349") == 0)
-		selectedText = file349Text;
-	else
-		return -1;
+static int xmp_write(const char *path, const char *buf, size_t size,
+					 off_t offset, struct fuse_file_info *fi)
+{
+	int fd;
+	int res;
 
-	// ... //
+	(void)fi;
+	fd = open(path, O_WRONLY);
+	if (fd == -1)
+		return -errno;
 
-	memcpy(buffer, selectedText + offset, size);
+	res = pwrite(fd, buf, size, offset);
+	if (res == -1)
+		res = -errno;
 
-	return strlen(selectedText) - offset;*/
+	close(fd);
+	return res;
 }
