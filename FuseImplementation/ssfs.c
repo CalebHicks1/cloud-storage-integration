@@ -127,6 +127,8 @@ static int xmp_create(const char *path, mode_t mode,
 	char *filename;
 	split_path_file(&pathBuffer, &filename, pathcpy);
 
+	
+
 	json_t *new_file = create_new_file(filename, mode, fi);
 	int drive_index = get_drive_index(path);
 	if (drive_index < 0)
@@ -164,9 +166,9 @@ static int xmp_create(const char *path, mode_t mode,
 		fuse_log_error("Insert failed\n");
 		return -errno;
 	}
-		
+
 	char *remoteFilePath = parse_out_drive_name(pathBuffer);
-	fuse_log_error("%s\n", remoteFilePath);
+
 
 	dprintf(Drives[drive_index].in, "{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, filePath);
 	fuse_log_error("{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, filePath);
@@ -454,9 +456,17 @@ static void split_path_file(char **pathBuffer, char **filenameBuffer, char *loca
 {
 	char* ts1 = strdup(localFile);
 char* ts2 = strdup(localFile);
+	
+char* tempdir = dirname(ts1);
+*pathBuffer = calloc(strlen(tempdir)+1, sizeof(char));
+strncpy(*pathBuffer, tempdir, strlen(tempdir));
 
-*pathBuffer = dirname(ts1);
-*filenameBuffer = basename(ts2);
+char* tempname = basename(ts2);
+*filenameBuffer= calloc(strlen(tempname)+1, sizeof(char));
+strncpy(*filenameBuffer, tempname, strlen(tempname));
+
+free(ts1);
+free(ts2);
 }
 
 /**
