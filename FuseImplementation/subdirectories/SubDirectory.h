@@ -75,6 +75,7 @@ json_t * SubDirectory_find_file_in_dir(SubDirectory * dir, char * path);	//Find 
  */
 Get_Result * get_subdirectory(int drive_index, char * path);	
 
+//Insert a newly created file into a subdirectory
 int SubDirectory_insert(SubDirectory * dir, json_t * file);
 
 //Place a newly generated subdirectory in a drive

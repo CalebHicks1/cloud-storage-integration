@@ -1,13 +1,7 @@
-Generated at: 2022-10-17 20:57:17
----------> [main] Cache did not start started---------> [handle_subdirectory] Called for /Google_Drive/myFolder
+Generated at: 2022-10-17 21:05:13
+---------> [main] Cache did not start started---------> [get_subdirectory] Getting from root directory
+---------> [get_subdirectory] Failed....
+---------> [get_file] Could not find file /Google_Drive/hi
+---------> [do_getattr] Could not find file /Google_Drive/hi
 ---------> [get_subdirectory] Getting from root directory
 ---------> [get_subdirectory] Failed....
----------> [handle_subdirectory] was null
----------> [handle_subdirectory] type: 2
----------> [get_subdirectory] Getting from root directory
----------> [get_subdirectory] Failed....
----------> [get_file] Could not find file /Google_Drive/myFolder/asdfasdfasdf
----------> [do_getattr] Could not find file /Google_Drive/myFolder/asdfasdfasdf
----------> [handle_subdirectory] Called for /Google_Drive/myFolder
----------> [get_subdirectory] Getting from root directory
----------> [get_subdirectory] Successful!!!!!

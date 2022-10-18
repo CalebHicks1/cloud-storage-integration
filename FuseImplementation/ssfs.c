@@ -65,6 +65,9 @@ json_t *  create_new_file(const char *path, mode_t mode,
 	
 }
 
+//This stuff is from the passthrough example, and mostly unmodified
+//The key method is xmp_create
+
 #ifdef HAVE_UTIMENSAT
 static int xmp_utimens(const char *path, const struct timespec ts[2],
 		       struct fuse_file_info *fi)

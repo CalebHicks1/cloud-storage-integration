@@ -41,7 +41,7 @@ SubDirectory * SubDirectory_create(char * name)
 	
 }
 
-
+//Just append the file to the FileList
 int SubDirectory_insert(SubDirectory * dir, json_t * file) 
 {
 	int res = json_list_append(&dir->FileList, file);
@@ -197,7 +197,7 @@ void __get_subdirectory(Get_Result * result, SubDirectory * dir, char ** tokens,
 		result->parent = prev;
 		return;
 	}
-	dump_subdirectory(dir, 0);
+	//dump_subdirectory(dir, 0);
 	SubDirectory * next = find_subdirectory(&(dir->subdirectories_list), *tokens);
 	if (next == NULL)
 	{

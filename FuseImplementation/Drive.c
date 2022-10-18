@@ -20,17 +20,7 @@ void dump_drive(Drive_Object * drive)
 		json_t * curr_file = json_array_get(drive->FileList, i);
 		printf("|--- %s\n", getJsonFileName(curr_file));
 	}
-	
-	//Old subdirectories
-	/*
-	printf("Subdirectories\n");
-	for (int i = 0; i < drive->num_sub_directories; i++) {
-		printf("\t%s: num_files: %d\n", drive->sub_directories[i].dirname, drive->sub_directories[i].num_files);
-	}
-	*/
-	
-	//New subdirectories
-	//printf("New subdirectories\n");
+
 	struct list_elem * e;
 	for (e = list_begin(&(drive->subdirectories_list)); e != list_end(&(drive->subdirectories_list)); e = list_next(e))
 	{
@@ -102,43 +92,6 @@ json_t *get_file(int drive_index, char *path)
 	}
 	fuse_log("We found the file %s!!!!!\n", path);
 	return file;
-	//Sub_Directory *dir = __get_subdirectory_for_path(drive_index, path);
-	//if (dir != NULL)
-	//{
-		//json_t *ret = __get_file_subdirectory(dir, path);
-		//if (ret != NULL)
-		//{
-			//Get_Result * folder = get_subdirectory(drive_index, path);
-			//if (folder->type == ERROR)
-			//{
-				//fuse_log_error("--------------------------> NEW FILESYSTEM: could not find %s\n", path);
-				
-			//}
-			//else
-			//{
-				//fuse_log("--------------------------> apparently, found the correct subdirectory\n");
-				
-			//}
-			//json_t * ret = SubDirectory_find_file(folder->subdirectory, path);
-			//if (ret != NULL)
-			//{
-				//fuse_log("... and we found it\n");
-				
-			//}
-			//else 
-			//{
-				//fuse_log_error("We did not find it :(((((\n");
-				
-			//}
-			//return ret;
-		//}
-		//else
-		//{
-			//fuse_log_error("%s should have been in subdirectory %s, but wasn't\n", path, dir->dirname);
-		//}
-	//}
-	//fuse_log_error("Could not find file %s\n", path);
-	//return NULL;
 }
 //							Setup / Updating
 
@@ -291,19 +244,6 @@ SubDirectory *handle_subdirectory(char *path)
 		fuse_log_error("Could not parse relative path for %s\n", path);
 		return NULL;
 	}
-	//Sub_Directory *new_directory = &(Drives[drive_index].sub_directories[Drives[drive_index].num_sub_directories]);
-	//int num_files = get_subdirectory_contents(&(new_directory->FileList), drive_index, relative_path, Drives[drive_index].in, Drives[drive_index].out);
-	//if (num_files < 0)
-	//{
-		//fuse_log_error("Problem getting subdirectory contents\n");
-	//}
-	//new_directory->num_files = num_files;
-	//sprintf(&(new_directory->dirname[0]), "%s", path);
-	//new_directory->self = json_object();
-	//json_object_set(new_directory->self, "Name", json_string(path));
-	//json_object_set(new_directory->self, "Size", json_integer(0));
-	//json_object_set(new_directory->self, "IsDir", json_string("true"));
-	//Drives[drive_index].num_sub_directories++;
 	
 	//New subdirectory version!
 	//Create directory
