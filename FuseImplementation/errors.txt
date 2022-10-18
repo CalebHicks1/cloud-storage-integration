@@ -1,24 +1,8 @@
-Generated at: 2022-10-17 21:21:14
----------> [main] Cache did not start started---------> [get_subdirectory] Failed....
----------> [get_file] Could not find file /Google_Drive/hi
----------> [do_getattr] Could not find file /Google_Drive/hi
----------> [get_subdirectory] Failed....
----------> [get_subdirectory] :(
----------> [Subdirectory_find_file] Couldn't find subdirectory while searching for the file: /Google_Drive/myFolder/hi
----------> [get_file] Could not find file /Google_Drive/myFolder/hi
----------> [do_getattr] Could not find file /Google_Drive/myFolder/hi
----------> [get_subdirectory] :(
----------> [Drive_insert] Cannot find location to put new file /Google_Drive/myFolder/hi
----------> [xmp_create] Insert failed
----------> [get_subdirectory] :(
----------> [Subdirectory_find_file] Couldn't find subdirectory while searching for the file: /Google_Drive/myFolder/hi
----------> [get_file] Could not find file /Google_Drive/myFolder/hi
----------> [do_getattr] Could not find file /Google_Drive/myFolder/hi
----------> [handle_subdirectory] Called for /Google_Drive/myFolder
----------> [get_subdirectory] Failed....
----------> [handle_subdirectory] was null
----------> [handle_subdirectory] type: 2
----------> [get_subdirectory] Failed....
----------> [get_file] Could not find file /Google_Drive/myFolder/hi
----------> [do_getattr] Could not find file /Google_Drive/myFolder/hi
----------> [handle_subdirectory] Called for /Google_Drive/myFolder
+Generated at: 2022-10-18 10:30:41
+---------> [do_read] Subdirectory
+---------> [do_read] Subdirectory
+---------> [do_read] The drive chosen is Google_Drive
+---------> [do_read] {"command":"download", "path":"/home/alyssa/Documents/csi_merge/FuseImplementation/mnt/ramdisk/", "files":["newfile.txt"]}
+---------> [do_read] Successfully downloaded {0}
+/home/alyssa/Documents/csi_merge/FuseImplementation/mnt/ramdisk/
+---------> [xmp_read] Open
