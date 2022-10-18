@@ -1,5 +1,10 @@
 #include "JsonTools.h"
 
+
+int json_list_append(json_t ** filelist, json_t * new_file)
+{
+	return json_array_append_new(*filelist, new_file);
+}
 /*
 * passing in a json object, function returns a string value representation of 
 file name.

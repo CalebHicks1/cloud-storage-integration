@@ -26,6 +26,7 @@
 #include "Drive.h"
 #include "logging.h"
 #include "api.h"
+#include "subdirectories/subdir_utils.h"
 /*Function definitions *******************************************/
 
 static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
@@ -52,6 +53,18 @@ const char *CacheFile = "/mnt/ramdisk/";
 /*Main function and Drive functions ***********************/
 
 
+json_t *  create_new_file(const char *path, mode_t mode,
+		      struct fuse_file_info *fi)
+{
+	fuse_log("Creating new file %s\n", path);
+	json_t * new_file = json_object();
+	json_object_set(new_file, "Name", json_string(path));
+	json_object_set(new_file, "Size", json_integer(0));
+	json_object_set(new_file, "IsDir", json_string("false"));
+	return new_file;
+	
+}
+
 #ifdef HAVE_UTIMENSAT
 static int xmp_utimens(const char *path, const struct timespec ts[2],
 		       struct fuse_file_info *fi)
@@ -72,12 +85,30 @@ static int xmp_create(const char *path, mode_t mode,
 		      struct fuse_file_info *fi)
 {
 	fuse_log("create\n");
-	fuse_log_error("createeeeeeeee\n");
 	int res;
-
-	res = open(path, fi->flags, mode);
+	char ** tokens = split((char*) path);
+	while (*tokens != NULL)
+	{
+		tokens++;
+	}
+	tokens = tokens - 1;
+	json_t * new_file = create_new_file(*tokens, mode, fi);
+	int drive_index = get_drive_index(path);
+	if (drive_index < 0)
+	{
+		fuse_log_error("Could not find drive for %s\n", path);
+		return -1;
+		
+	}
+	
+	res = Drive_insert(drive_index, (char*) path, new_file);
+	//res = open(path, fi->flags, mode);
 	if (res == -1)
+	{
+		fuse_log_error("Insert failed\n");
 		return -errno;
+	}
+		
 
 	fi->fh = res;
 	return 0;

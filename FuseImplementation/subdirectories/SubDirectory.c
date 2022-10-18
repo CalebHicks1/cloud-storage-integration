@@ -2,6 +2,7 @@
 #include "../Drive.h"
 #include "../logging.h"
 #include "subdir_utils.h"
+#include "../JsonTools.h"
 extern Drive_Object Drives[NUM_DRIVES];
 
 /**
@@ -37,6 +38,23 @@ SubDirectory * SubDirectory_create(char * name)
 	/**************************************/
 	
 	return ret;
+	
+}
+
+
+int SubDirectory_insert(SubDirectory * dir, json_t * file) 
+{
+	int res = json_list_append(&dir->FileList, file);
+	if (res >= 0)
+	{
+		fuse_log("Inserting file was successful\n");
+		dir->num_files++;
+	}
+	else
+	{
+		fuse_log_error("Failed to insert new file into subdirectory\n");
+	}
+	return res;
 	
 }
 

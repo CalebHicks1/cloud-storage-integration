@@ -50,6 +50,7 @@ typedef struct Drive_Object Drive_Object;
 #define NUM_DRIVES 2
 #define LINE_MAX_BUFFER_SIZE 1024
 
+int Drive_insert(int drive_index, char * path, json_t * file);
 //Important Setup methods
 int populate_filelists();
 int update_drive(int i);

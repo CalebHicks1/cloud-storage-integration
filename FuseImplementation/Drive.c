@@ -42,6 +42,43 @@ void dump_drive(Drive_Object * drive)
 }
 
 /**
+ * Insert a newly generated file into drive. Path should contain the full path of the file,
+ * while the json representation should have the name set to be the relative path
+ */
+int Drive_insert(int drive_index, char * path, json_t * file)
+{
+	fuse_log("Inserting %s\n", getJsonFileName(file));
+	Get_Result * get_result = get_subdirectory(drive_index, (char*) path);
+	if (get_result->type == ROOT)
+	{
+		fuse_log("Inserting %s in root directory\n", getJsonFileName(file));
+		int res =  json_list_append(&(Drives[drive_index].FileList), file);
+		if (res >= 0)
+		{
+			fuse_log("Sucessfully inserted\n");
+			Drives[drive_index].num_files++;
+		}
+		else {
+			fuse_log_error("Insert failed\n");
+		}
+		return res;
+	}
+	else if (get_result->subdirectory != NULL || get_result->type == ELEMENT)
+	{
+		fuse_log("New file %s should be inserted in a subdirectory\n", path);
+		int res = SubDirectory_insert(get_result->subdirectory, file);
+		return res;
+	}
+	else
+	{
+		fuse_log_error("Cannot find location to put new file %s\n", path);
+		return -1;
+	}
+	
+	
+}
+
+/**
  * Return json object if file exists anywhere in drive, NULL if not
  * drive_index: index of drive in Drives
  * path: path of the file
