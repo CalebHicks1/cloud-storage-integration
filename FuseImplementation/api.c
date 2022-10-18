@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include "api.h"
-
+#include "logging.h"
 
 #define WRITE_END 1
 #define READ_END 0
@@ -44,18 +44,27 @@ params:
 */
 int spawn_module(int *in, int *out,  pid_t *pid, char *exec_dir)
 {
-
     int write_pipe[2]; // pipe that the child writes to
     int read_pipe[2];  // pipe that the child reads from
     pipe(write_pipe);
     pipe(read_pipe);
 
-    int flags = O_CLOEXEC;
-
-    // create child process
+    // Create child process
     pid_t child_pid = fork();
-    if (child_pid != 0)
-    { // child process
+    if (child_pid == -1)
+    {
+        // Fork error
+        fuse_log_error("Fork error\n");
+    }
+    else if (child_pid > 0)
+    {
+        // In parent
+        close(write_pipe[WRITE_END]);
+        close(read_pipe[READ_END]);
+    }
+    else
+    {
+        // In child
 
         // the child writes to write_pipe[WRITE_END]
         if (dup2(write_pipe[WRITE_END], 1) == -1)
@@ -80,11 +89,6 @@ int spawn_module(int *in, int *out,  pid_t *pid, char *exec_dir)
         }
 
         // exit(0);
-    }
-    else
-    { // the parent
-        close(write_pipe[WRITE_END]);
-        close(read_pipe[READ_END]);
     }
 
     *in = read_pipe[WRITE_END];
