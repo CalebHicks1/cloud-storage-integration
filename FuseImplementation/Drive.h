@@ -1,3 +1,5 @@
+#ifndef DRIVE_H
+#define DRIVE_H
 #include <fuse.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -8,19 +10,26 @@
 #include <jansson.h>
 #include <sys/stat.h>
 #include "JsonTools.h"
+#include "list/list.h"
+#include "subdirectories/SubDirectory.h"
 
 #define LEN_DIRNAME 200
 #define LEN_EXEC_PATH 200
-#define NUM_SUBDIRS 20
-struct Sub_Directory
-{
-	char dirname[LEN_DIRNAME];
-	json_t *FileList;
-	int num_files;
-	json_t * self;	//"self" is actually unecessary but will leave it in
-					//in case it's needed later
-};
-typedef struct Sub_Directory Sub_Directory;
+//#define NUM_SUBDIRS 20
+//struct Sub_Directory
+//{
+	//char dirname[LEN_DIRNAME];
+	//json_t *FileList;
+	//int num_files;
+	//json_t * self;	//"self" is actually unecessary but will leave it in
+					////in case it's needed later
+//};
+//typedef struct Sub_Directory Sub_Directory;
+
+//-------------------------- New subdirectory
+
+//----------------------------------
+
 struct Drive_Object
 {
 	char dirname[LEN_DIRNAME];
@@ -30,14 +39,18 @@ struct Drive_Object
 	pid_t pid;
 	char exec_path[LEN_EXEC_PATH];
 	int num_files;
-	Sub_Directory sub_directories[NUM_SUBDIRS];
+	//Sub_Directory sub_directories[NUM_SUBDIRS];
 	int num_sub_directories;
+	
+	
+	struct list subdirectories_list;
 };
 typedef struct Drive_Object Drive_Object;
 
 #define NUM_DRIVES 2
 #define LINE_MAX_BUFFER_SIZE 1024
 
+int Drive_insert(int drive_index, char * path, json_t * file);
 //Important Setup methods
 int populate_filelists();
 int update_drive(int i);
@@ -52,7 +65,7 @@ int listAsArray(json_t** list, char* cmd, char * optional_path, int in, int out)
 
 //Subdirectories
 int get_subdirectory_contents(json_t ** list, int drive_index,  char *path, int in, int out);
-Sub_Directory * handle_subdirectory(char * path);
+SubDirectory * handle_subdirectory(char * path);
 
 //Interal helpers
 int is_drive(const char *path);
@@ -61,6 +74,9 @@ int get_drive_index(const char *path);
 char * parse_out_drive_name(char * path);
 int get_file_index(const char *path, int driveIndex);
 int kill_all_processes();
-Sub_Directory * __get_subdirectory_for_path(int drive_index, char * path);
-json_t * __get_file_subdirectory(Sub_Directory * subdir, char * path);
+
+
+//Debug
+void dump_drive(Drive_Object * drive);
+#endif
 

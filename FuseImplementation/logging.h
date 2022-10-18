@@ -6,6 +6,7 @@ void fuse_log(char * fmt, ...);
 void fuse_log_error(char * fmt, ...);
 //		Setup error log file
 void initialize_log(void);
+void __initialize_log(char * name);
 //		Callbacks
 void __fuse_log(const char* caller_name, char * fmt, ...);
 void __fuse_log_error(const char* caller_name, char * fmt, ...);
