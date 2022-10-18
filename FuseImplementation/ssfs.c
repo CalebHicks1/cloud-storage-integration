@@ -86,6 +86,31 @@ static int xmp_utimens(const char *path, const struct timespec ts[2],
 }
 #endif
 
+//Create new directories
+static int xmp_mkdir(const char *path, mode_t mode)
+{
+	fuse_log("mkdir");
+	int res;
+	char *pathcpy = strdup(path);
+	char *pathBuffer;
+	char *newDirName;
+	split_path_file(&pathBuffer, &newDirName, pathcpy);
+
+	char cwd[512];
+	getcwd(cwd, sizeof(cwd));
+
+ 	char *cachePath = strcat(cwd, CacheFile);
+	char *localPath = strcat(cachePath, newDirName);
+	fuse_log("New folder path  : %s", localPath);
+
+	//trigger new directory in drive
+	res = mkdir(localPath, mode);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
 // This handles adding new files
 // If you "touch test.txt", it should go:
 // get_attr: Could not find file (return -2)
@@ -201,6 +226,7 @@ static struct fuse_operations operations = {
 #ifdef HAVE_UTIMENSAT
 	.utimens = xmp_utimens,
 #endif
+	.mkdir = xmp_mkdir,
 //	.open = xmp_open,
 	.create = xmp_create,
 //	.mknod = xmp_mknod,
