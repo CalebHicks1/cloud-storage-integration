@@ -1,116 +1,24 @@
-Generated at: 2022-10-17 21:11:09
----------> [main] Cache did not start started---------> [get_subdirectory] Getting from root directory
+Generated at: 2022-10-17 21:21:14
+---------> [main] Cache did not start started---------> [get_subdirectory] Failed....
+---------> [get_file] Could not find file /Google_Drive/hi
+---------> [do_getattr] Could not find file /Google_Drive/hi
 ---------> [get_subdirectory] Failed....
----------> [get_file] Could not find file /Google_Drive/.hidden
----------> [do_getattr] Could not find file /Google_Drive/.hidden
----------> [get_subdirectory] Getting from root directory
----------> [get_subdirectory] Failed....
----------> [get_file] Could not find file /Google_Drive/.hidden
----------> [do_getattr] Could not find file /Google_Drive/.hidden
+---------> [get_subdirectory] :(
+---------> [Subdirectory_find_file] Couldn't find subdirectory while searching for the file: /Google_Drive/myFolder/hi
+---------> [get_file] Could not find file /Google_Drive/myFolder/hi
+---------> [do_getattr] Could not find file /Google_Drive/myFolder/hi
+---------> [get_subdirectory] :(
+---------> [Drive_insert] Cannot find location to put new file /Google_Drive/myFolder/hi
+---------> [xmp_create] Insert failed
+---------> [get_subdirectory] :(
+---------> [Subdirectory_find_file] Couldn't find subdirectory while searching for the file: /Google_Drive/myFolder/hi
+---------> [get_file] Could not find file /Google_Drive/myFolder/hi
+---------> [do_getattr] Could not find file /Google_Drive/myFolder/hi
 ---------> [handle_subdirectory] Called for /Google_Drive/myFolder
----------> [get_subdirectory] Getting from root directory
 ---------> [get_subdirectory] Failed....
 ---------> [handle_subdirectory] was null
 ---------> [handle_subdirectory] type: 2
----------> [get_subdirectory] Getting from root directory
 ---------> [get_subdirectory] Failed....
----------> [get_file] Could not find file /Google_Drive/myFolder/.hidden
----------> [do_getattr] Could not find file /Google_Drive/myFolder/.hidden
----------> [handle_subdirectory] Called for /Google_Drive/whatever
----------> [get_subdirectory] Getting from root directory
----------> [get_subdirectory] Failed....
----------> [handle_subdirectory] was null
----------> [handle_subdirectory] type: 2
----------> [get_subdirectory] Getting from root directory
----------> [get_subdirectory] Failed....
----------> [get_file] Could not find file /Google_Drive/whatever/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/.hidden
+---------> [get_file] Could not find file /Google_Drive/myFolder/hi
+---------> [do_getattr] Could not find file /Google_Drive/myFolder/hi
 ---------> [handle_subdirectory] Called for /Google_Drive/myFolder
----------> [get_subdirectory] Getting from root directory
----------> [get_subdirectory] Successful!!!!!
----------> [get_file] Could not find file /Google_Drive/myFolder/.hidden
----------> [do_getattr] Could not find file /Google_Drive/myFolder/.hidden
----------> [handle_subdirectory] Called for /Google_Drive/myFolder/subfolder
----------> [handle_subdirectory] wasnt null
----------> [handle_subdirectory] was element
----------> [get_file] Could not find file /Google_Drive/myFolder/subfolder/.hidden
----------> [do_getattr] Could not find file /Google_Drive/myFolder/subfolder/.hidden
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [handle_subdirectory] Called for /Google_Drive/myFolder
----------> [get_subdirectory] Getting from root directory
----------> [get_subdirectory] Successful!!!!!
----------> [handle_subdirectory] Called for /Google_Drive/myFolder/subfolder
----------> [Subdirectory_find_file] searching here
----------> [handle_subdirectory] Called for /Google_Drive/myFolder
----------> [get_subdirectory] Getting from root directory
----------> [get_subdirectory] Successful!!!!!
----------> [Subdirectory_find_file] searching here
----------> [get_subdirectory] Getting from root directory
----------> [get_subdirectory] Failed....
----------> [get_file] Could not find file /Google_Drive/.hidden
----------> [do_getattr] Could not find file /Google_Drive/.hidden
----------> [handle_subdirectory] Called for /Google_Drive/whatever
----------> [get_subdirectory] Getting from root directory
----------> [get_subdirectory] Successful!!!!!
----------> [get_file] Could not find file /Google_Drive/whatever/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/.hidden
----------> [handle_subdirectory] Called for /Google_Drive/whatever
----------> [get_subdirectory] Getting from root directory
----------> [get_subdirectory] Successful!!!!!
----------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo
----------> [handle_subdirectory] wasnt null
----------> [handle_subdirectory] was element
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/.hidden
----------> [Subdirectory_find_file] searching here
----------> [handle_subdirectory] Called for /Google_Drive/whatever
----------> [get_subdirectory] Getting from root directory
----------> [get_subdirectory] Successful!!!!!
----------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo
----------> [Subdirectory_find_file] searching here
----------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo/boo
----------> [handle_subdirectory] wasnt null
----------> [handle_subdirectory] was element
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/boo/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/boo/.hidden
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo
----------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo/boo
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo/boo/ahhhhh
----------> [handle_subdirectory] wasnt null
----------> [handle_subdirectory] was element
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/boo/ahhhhh/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/boo/ahhhhh/.hidden
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo/boo
----------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo/boo/ahhhhh
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/boo/ahhhhh/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/boo/ahhhhh/.hidden
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [handle_subdirectory] Called for /Google_Drive/whatever
----------> [get_subdirectory] Getting from root directory
----------> [get_subdirectory] Successful!!!!!
----------> [get_file] Could not find file /Google_Drive/whatever/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/.hidden
----------> [Subdirectory_find_file] searching here
----------> [get_file] Could not find file /Google_Drive/whatever/hi2
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi2
----------> [get_file] Could not find file /Google_Drive/whatever/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/.hidden
----------> [get_file] Could not find file /Google_Drive/whatever/hi3
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi3

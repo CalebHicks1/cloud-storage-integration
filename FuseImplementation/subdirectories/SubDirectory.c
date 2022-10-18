@@ -169,11 +169,11 @@ json_t * SubDirectory_find_file_in_dir(SubDirectory * dir, char * path)
 SubDirectory * find_subdirectory(struct list * subdirectory_list, char * relative_path)
 {
 	struct list_elem *e;
-	fuse_log("starting\n");
+	//fuse_log("starting\n");
 	for (e = list_begin(subdirectory_list); e != list_end(subdirectory_list); e = list_next(e))
 	{
 		SubDirectory * curr = list_entry(e, struct SubDirectory, elem);
-		fuse_log("curr: %s\n", curr->dirname);
+		//fuse_log("curr: %s\n", curr->dirname);
 		if (strcmp(curr->rel_dirname, relative_path) == 0)
 		{
 			
@@ -230,11 +230,11 @@ Get_Result * get_subdirectory(int drive_index, char * path)
 		result->type = ROOT;
 		if (count_tokens(tokens) == 2)
 		{
-			fuse_log_error("Getting from root directory\n");
+			fuse_log("geting from root directory\n");
 			result->subdirectory = find_subdirectory(&Drives[drive_index].subdirectories_list, *(tokens + 1));
 			if (result->subdirectory != NULL)
 			{
-				fuse_log_error("Successful!!!!!\n");
+				fuse_log("Successful!!!!!\n");
 			}
 			else
 			{

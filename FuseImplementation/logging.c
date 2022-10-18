@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include "logging.h"
 char * error_log_filename = "errors.txt";
-char * subdir_log_name = "subdir_log.txt";
+
 /**
  * Reset the file for __fuse_log_error and note the date and time
  */
@@ -19,7 +19,7 @@ void initialize_log(void) {
     //fprintf(log, "Generated at: %d-%02d-%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 	//fclose(log);
 	__initialize_log(error_log_filename);
-	__initialize_log(subdir_log_name);
+
 }
 
 void __initialize_log(char * name) 
@@ -34,12 +34,7 @@ void __initialize_log(char * name)
 }
 
 
-void __fuse_log_subdir(const char* caller_name, char * fmt)
-{
-	
-	
-	
-}
+
 
 /**
  * Callback for fuse_log macro

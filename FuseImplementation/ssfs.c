@@ -84,6 +84,11 @@ static int xmp_utimens(const char *path, const struct timespec ts[2],
 }
 #endif
 
+//This handles adding new files
+//If you "touch test.txt", it should go:
+//get_attr: Could not find file (return -2)
+//xmp_create gets called
+//get_attr: Found file :)
 static int xmp_create(const char *path, mode_t mode,
 		      struct fuse_file_info *fi)
 {
