@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <jansson.h>
 #include <sys/stat.h>
+
+int json_list_append(json_t ** filelist, json_t * new_file);
 const char* getJsonFileName(json_t* file);
 
 int parseJsonString(json_t** fileListAsArray, char stringArray[][1024], int numberOfLines);

@@ -1,5 +1,10 @@
 #include "JsonTools.h"
 
+
+int json_list_append(json_t ** filelist, json_t * new_file)
+{
+	return json_array_append_new(*filelist, new_file);
+}
 /*
 * passing in a json object, function returns a string value representation of 
 file name.
@@ -13,7 +18,7 @@ const char* getJsonFileName(json_t* file){
 	
 	else if (json_is_object(file) ){
 		
-		 printf("\n");
+		//printf("\n");
 	 	json_t* value = json_object_get(file, "Name");
 
 	 	if (value ==NULL){
@@ -21,7 +26,7 @@ const char* getJsonFileName(json_t* file){
 		}
 		return json_string_value(value);
 	}
-	printf("Not obj\n");
+	//printf("Not obj\n");
 	return NULL;
 }
 

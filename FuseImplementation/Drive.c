@@ -1,8 +1,72 @@
 #include "Drive.h"
 #include "logging.h"
+#include "subdirectories/SubDirectory.h"
 //#include "ssfs.h"
 #include "api.h"
 extern Drive_Object Drives[NUM_DRIVES];
+
+#define BASH
+
+void dump_drive(Drive_Object * drive)
+{
+	if (drive == NULL) {
+		fuse_log_error("Null drive\n");
+		return;
+	}
+	//This Drives attributes
+	printf("| %s (%d files)\n", &(drive->dirname[0]), drive->num_files);
+	//Files
+	for (int i = 0; i < drive->num_files; i++) {
+		json_t * curr_file = json_array_get(drive->FileList, i);
+		printf("|--- %s\n", getJsonFileName(curr_file));
+	}
+
+	struct list_elem * e;
+	for (e = list_begin(&(drive->subdirectories_list)); e != list_end(&(drive->subdirectories_list)); e = list_next(e))
+	{
+		struct SubDirectory * currSubdir = list_entry(e, struct SubDirectory, elem);
+		//printf("|--- ");
+		dump_subdirectory(currSubdir, 0);
+	}
+	
+}
+
+/**
+ * Insert a newly generated file into drive. Path should contain the full path of the file,
+ * while the json representation should have the name set to be the relative path
+ */
+int Drive_insert(int drive_index, char * path, json_t * file)
+{
+	fuse_log("Inserting %s\n", getJsonFileName(file));
+	Get_Result * get_result = get_subdirectory(drive_index, (char*) path);
+	if (get_result->type == ROOT)
+	{
+		fuse_log("Inserting %s in root directory\n", getJsonFileName(file));
+		int res =  json_list_append(&(Drives[drive_index].FileList), file);
+		if (res >= 0)
+		{
+			fuse_log("Sucessfully inserted\n");
+			Drives[drive_index].num_files++;
+		}
+		else {
+			fuse_log_error("Insert failed\n");
+		}
+		return res;
+	}
+	else if (get_result->subdirectory != NULL || get_result->type == ELEMENT)
+	{
+		fuse_log("New file %s should be inserted in a subdirectory\n", path);
+		int res = SubDirectory_insert(get_result->subdirectory, file);
+		return res;
+	}
+	else
+	{
+		fuse_log_error("Cannot find location to put new file %s\n", path);
+		return -1;
+	}
+	
+	
+}
 
 /**
  * Return json object if file exists anywhere in drive, NULL if not
@@ -18,21 +82,16 @@ json_t *get_file(int drive_index, char *path)
 		return json_array_get(Drives[drive_index].FileList, file_index);
 	}
 	// Check subdirectories
-	Sub_Directory *dir = __get_subdirectory_for_path(drive_index, path);
-	if (dir != NULL)
+	
+	json_t * file = Subdirectory_find_file(drive_index, path);
+	if (file == NULL)
 	{
-		json_t *ret = __get_file_subdirectory(dir, path);
-		if (ret != NULL)
-		{
-			return ret;
-		}
-		else
-		{
-			fuse_log_error("%s should have been in subdirectory %s, but wasn't\n", path, dir->dirname);
-		}
+		fuse_log_error("Could not find file %s\n", path);
+		dump_drive(&Drives[0]);
+		return NULL;
 	}
-	fuse_log_error("Could not find file %s\n", path);
-	return NULL;
+	fuse_log("We found the file %s!!!!!\n", path);
+	return file;
 }
 //							Setup / Updating
 
@@ -55,6 +114,7 @@ int populate_filelists()
 
 		Drives[i].in = in;
 		Drives[i].out = out;
+		list_init(&(Drives[i].subdirectories_list));
 		// Populate FileList
 		Drives[i].num_files = listAsArray(&(Drives[i].FileList), Drives[i].exec_path, NULL, Drives[i].in, Drives[i].out);
 		if (Drives[i].num_files < 0)
@@ -105,75 +165,72 @@ int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char *optional_
 
 /*Subdirectories *************************************************/
 
-Sub_Directory *__get_subdirectory_for_path(int drive_index, char *path)
-{
-	size_t max_len = 0;
-	Sub_Directory *ret = NULL;
-	for (int subdir_index = 0; subdir_index < Drives[drive_index].num_sub_directories; subdir_index++)
-	{
-		char *sub_dirname = Drives[drive_index].sub_directories[subdir_index].dirname;
-		if (strncmp(sub_dirname, path, strlen(sub_dirname)) == 0)
-		{
-			// Check len so we don't choose /drive/subdirectory over drive/subdirectory/sub-subdirectory
-			// Check that names aren't exactly equal, as in that case the file IS the subdirectory
-			//... and we want the directory containing it
-			if ((strlen(sub_dirname) > max_len) && (strcmp(path, sub_dirname) != 0))
-			{
-				max_len = strlen(sub_dirname);
-				ret = &(Drives[drive_index].sub_directories[subdir_index]);
-			}
-		}
-	}
-	return ret;
-}
-
-json_t *__get_file_subdirectory(Sub_Directory *subdir, char *path)
-{
-	for (int file_index = 0; file_index < subdir->num_files; file_index++)
-	{
-		json_t *curr = json_array_get(subdir->FileList, file_index);
-		char fullname[200];
-		strcpy(fullname, "\0");
-		strcat(&fullname[0], subdir->dirname);
-		strcat(&fullname[0], "/");
-		strcat(&fullname[0], getJsonFileName(curr));
-		if (strcmp(fullname, path) == 0)
-		{
-			return curr;
-		}
-	}
-	return NULL;
-}
-
+/**
+ * Uses API to get contents of a subdirectory, placing this contents in param list
+ */
 int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in, int out)
 {
 	fuse_log("Generating filelist for subdirectory %s\n", path);
 	return listAsArray(list, Drives[drive_index].exec_path, path, in, out);
 }
 
+
 /**
  * If subdirectory exists, return it. If not, generate it, and add it
  * to the list of the Drive's subdirectories
  */
-Sub_Directory *handle_subdirectory(char *path)
+SubDirectory *handle_subdirectory(char *path)
 {
 	fuse_log("Called for %s\n", path);
+	fuse_log_error("Called for %s\n", path);
 	int drive_index = get_drive_index(path);
 
+	dump_drive(&Drives[drive_index]);
 	if (drive_index < 0)
 	{
 		fuse_log_error("Drive not found for subdirectory %s\n", path);
 		return NULL;
 	}
-
-	for (int i = 0; i < Drives[drive_index].num_sub_directories; i++)
+	
+	
+	Get_Result * ret = get_subdirectory(drive_index, path);
+	//(ret->type == THIS )
+	if (ret->subdirectory != NULL && ret->type != ELEMENT)
 	{
-		if (strcmp(Drives[drive_index].sub_directories[i].dirname, path) == 0)
+		if (ret->type == ELEMENT)
 		{
-			fuse_log("Subdirectory %s already exists... returning it\n", path);
-			return &Drives[drive_index].sub_directories[i];
+			fuse_log("Is element!!!!!!!\n");
 		}
+		fuse_log("Subdirectory %s already exists, returning it\n", path);
+		return ret->subdirectory;
 	}
+	else
+	{
+		if (ret->subdirectory == NULL)
+		{
+			fuse_log_error("was null\n");
+			fuse_log_error("type: %d\n", ret->type);
+			
+		}
+		else
+		{
+			fuse_log_error("wasnt null\n");
+			if (ret->type == ELEMENT)
+			{
+				fuse_log_error("was element\n");
+				
+			}
+			else 
+			{
+				fuse_log_error("WASNT element\n");
+				fuse_log_error("Type: %d\n", ret->type);
+				
+			}
+			
+		}
+		
+	}
+	
 	// Generate the subdirectory
 	fuse_log("Need to generate subdirectory %s...\n", path);
 
@@ -187,20 +244,17 @@ Sub_Directory *handle_subdirectory(char *path)
 		fuse_log_error("Could not parse relative path for %s\n", path);
 		return NULL;
 	}
-	Sub_Directory *new_directory = &(Drives[drive_index].sub_directories[Drives[drive_index].num_sub_directories]);
-	int num_files = get_subdirectory_contents(&(new_directory->FileList), drive_index, relative_path, Drives[drive_index].in, Drives[drive_index].out);
-	if (num_files < 0)
-	{
-		fuse_log_error("Problem getting subdirectory contents\n");
-	}
-	new_directory->num_files = num_files;
-	sprintf(&(new_directory->dirname[0]), "%s", path);
-	new_directory->self = json_object();
-	json_object_set(new_directory->self, "Name", json_string(path));
-	json_object_set(new_directory->self, "Size", json_integer(0));
-	json_object_set(new_directory->self, "IsDir", json_string("true"));
-	Drives[drive_index].num_sub_directories++;
-	return new_directory;
+	
+	//New subdirectory version!
+	//Create directory
+	SubDirectory * new = SubDirectory_create(path);
+	//Insert subdirectory
+	insert_subdirectory(drive_index, new);
+	//Insert files 
+	fuse_log("Getting files for new subdirectory structure: %s\n", path);
+	new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path, Drives[drive_index].in, Drives[drive_index].out);
+	
+	return new;
 }
 
 /**
@@ -254,6 +308,9 @@ int is_drive(const char *path)
 	return -1;
 }
 
+/**
+ * Gets drive PRECISELY corresponding to path
+ */
 struct Drive_Object *get_drive(const char *path)
 {
 	for (int i = 0; i < NUM_DRIVES; i++)
@@ -266,7 +323,10 @@ struct Drive_Object *get_drive(const char *path)
 	return NULL;
 }
 
-// Works for path = drivename, or path = drivename/somefile
+/**
+ * Gets index of drive that "path" would live in
+ * Works for path = drivename, or path = drivename/somefile
+ */
 int get_drive_index(const char *path)
 {
 
@@ -294,6 +354,9 @@ char *parse_out_drive_name(char *path)
 	return (++ret);
 }
 
+/**
+ * Gets the index of "path" in ROOT level of drive
+ */
 int get_file_index(const char *path, int driveIndex)
 {
 	char *cut_path = parse_out_drive_name((char *)path);
