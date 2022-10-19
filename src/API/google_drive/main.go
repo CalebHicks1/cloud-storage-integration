@@ -140,7 +140,7 @@ func (c *GoogleDriveClient) GetFiles(path string) ([]types.File, *types.APIError
 
 		// append the files from the given page that was returned and get the next page token
 		for _, f := range r.Files {
-			fs = append(fs, types.File{Name: f.Name, IsDir: f.MimeType == "application/vnd.google-apps.folder", Size: f.Size})
+			fs = append(fs, types.File{Name: f.Name, IsDir: f.MimeType == "application/vnd.google-apps.folder", Size: uint64(f.Size)})
 		}
 		pageToken = r.NextPageToken
 
@@ -155,9 +155,6 @@ func (c *GoogleDriveClient) GetFiles(path string) ([]types.File, *types.APIError
 // help from: https://gist.github.com/tanaikech/19655a8130bac1ba510b29c9c44bbd97
 // UploadFile uploads the given file to the given path in the drive
 func (c *GoogleDriveClient) UploadFile(file, path string) *types.APIError {
-	if file == "" {
-		return &types.APIError{Code: types.INVALID_INPUT, Message: "no file given for an 'upload' call"}
-	}
 
 	// find where to upload our file
 	parent, err := c.FindFile(path)
@@ -201,11 +198,10 @@ func (c *GoogleDriveClient) UploadFile(file, path string) *types.APIError {
 	if err != nil {
 		return &types.APIError{Code: types.CLIENT_FAILED, Message: fmt.Sprintf("%s\n", err)}
 	}
-
 	return nil
 }
 
-// DeleteFile deletes the file of folder (and all files in it) at the given path
+// DeleteFile deletes the file or folder (and all files in it) at the given path
 func (c *GoogleDriveClient) DeleteFile(path string) *types.APIError {
 
 	// find the file we want to delete
@@ -228,9 +224,6 @@ func (c *GoogleDriveClient) DeleteFile(path string) *types.APIError {
 
 // DownloadFile downlaods the file at filePath to the dir specified by downloadPath
 func (c *GoogleDriveClient) DownloadFile(filePath, downloadPath string) *types.APIError {
-	if filePath == "" {
-		return &types.APIError{Code: types.INVALID_INPUT, Message: "no file given for an 'download' call"}
-	}
 
 	// find what file to download
 	file, err := c.FindFile(filePath)
@@ -245,22 +238,24 @@ func (c *GoogleDriveClient) DownloadFile(filePath, downloadPath string) *types.A
 	}
 	defer res.Body.Close()
 
+	// make sure we have a slash at the end of our downloadPath
 	slash := "/"
 	if downloadPath == "" || string(downloadPath[len(downloadPath)-1]) == "/" {
 		slash = ""
 	}
 
+	// create file on local machine
 	localFile, err := os.Create(downloadPath + slash + file.Name)
 	if err != nil {
 		return &types.APIError{Code: types.COMMAND_FAILED, Message: fmt.Sprintf("%s\n", err)}
 	}
 	defer localFile.Close()
 
+	// copy drive file to local file
 	_, err = io.Copy(localFile, res.Body)
 	if err != nil {
 		return &types.APIError{Code: types.COMMAND_FAILED, Message: fmt.Sprintf("%s\n", err)}
 	}
-
 	return nil
 }
 
@@ -305,7 +300,6 @@ func (c *GoogleDriveClient) FindFile(path string) (*drive.File, error) {
 	if err != nil || (res != nil && res.Files != nil && len(res.Files) == 0) {
 		return nil, fmt.Errorf("could not get folder/file '%s'\n%s", target, err)
 	}
-
 	return res.Files[0], nil
 }
 

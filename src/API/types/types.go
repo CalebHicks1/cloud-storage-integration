@@ -19,7 +19,7 @@ type Command struct {
 type File struct {
 	Name  string `json:"Name"`
 	IsDir bool   `json:"IsDir"`
-	Size  int64  `json:"Size"`
+	Size  uint64 `json:"Size"`
 }
 
 // API client error codes
@@ -131,6 +131,19 @@ func (api *APIClient) Serve(debug bool) {
 		case "upload":
 			// we want to upload the given files to the given path
 			for _, f := range cmd.Files {
+
+				// cannot upload nothing
+				if f == "" {
+					response.Err.Update(INVALID_INPUT, "no file given for an 'upload' call")
+					break
+				}
+
+				// cannot upload root
+				if f == "/" {
+					response.Err.Update(INVALID_INPUT, `cannot upload root "/"`)
+					break
+				}
+
 				err := api.Client.UploadFile(f, cmd.Path)
 				if err != nil {
 					response.Err.Update(err.Code, "Error uploading '%s':\n%s\n", f, err.Message)
@@ -144,6 +157,19 @@ func (api *APIClient) Serve(debug bool) {
 		case "download":
 			// we want to download the given files to the given path
 			for _, f := range cmd.Files {
+
+				// cannot download nothing
+				if f == "" {
+					response.Err.Update(INVALID_INPUT, "no file given for an 'download' call")
+					break
+				}
+
+				// cannot download root
+				if f == "/" {
+					response.Err.Update(INVALID_INPUT, `cannot download root "/"`)
+					break
+				}
+
 				err := api.Client.DownloadFile(f, cmd.Path)
 				if err != nil {
 					response.Err.Update(err.Code, "Error downloading '%s':\n%s\n", f, err.Message)
@@ -157,6 +183,19 @@ func (api *APIClient) Serve(debug bool) {
 		case "delete":
 			// we want to delete the given files
 			for _, f := range cmd.Files {
+
+				// cannot delete nothing
+				if f == "" {
+					response.Err.Update(INVALID_INPUT, "no file given for an 'delete' call")
+					break
+				}
+
+				// cannot delete root
+				if f == "/" {
+					response.Err.Update(INVALID_INPUT, `cannot delte root "/"`)
+					break
+				}
+
 				err := api.Client.DeleteFile(f)
 				if err != nil {
 					response.Err.Update(err.Code, "Error deleting '%s':\n%s\n", f, err.Message)

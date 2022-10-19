@@ -1,0 +1,8 @@
+{"command":"list","path":"","files":[]}
+{"command":"upload","path":"/Main","files":["hello.txt"]}
+{"command":"upload","path":"/Main/","files":["midterm_links.txt"]}
+{"command":"upload","path":"Main/","files":["hi/QuantumHW1.pdf"]}
+{"command":"list","path":"Main","files":[]}
+{"command":"download","path":"","files":["Main/QuantumHW1.pdf"]}
+{"command":"delete","path":"","files":["/Main"]}
+{"command":"shutdown","path":"","files":[]}
