@@ -17,6 +17,7 @@ type DropBoxClient struct {
 	Name string
 }
 
+// TODO: switch to using OAuth2.0 (token expires very quickly)
 const TOKEN = "sl.BRaKUjPmUUcf7RuJoQmCnNbGi03CzevVOAAgK1cyh_fMbKI88dEDYWNj-L5kxQU9DMAULoxlm5UYfrMK23djUf-3Gk2RBpuDSH7vtikFgXJSVQR2NEOD0EvZh7ufgq81ucrJ6kymh2Ov"
 
 func main() {
@@ -36,14 +37,9 @@ func main() {
 
 func (c *DropBoxClient) GetFiles(path string) ([]types.File, *types.APIError) {
 
-	// add leading "/"
-	if path != "" && string(path[0]) != "/" {
-		path = "/" + path
-	}
-
-	// remove trailing "/"
-	if path != "" && path != "/" && string(path[len(path)-1]) == "/" {
-		path = path[:len(path)-1]
+	// if not blank, add leading "/" and remove trailing "/"
+	if path != "" {
+		path = c.formatPath(path, true, false, false, true)
 	}
 
 	// get the entries in the given directory
@@ -69,16 +65,6 @@ func (c *DropBoxClient) GetFiles(path string) ([]types.File, *types.APIError) {
 // UploadFile uploads the given file to the given path in the drive
 func (c *DropBoxClient) UploadFile(file, path string) *types.APIError {
 
-	// make sure upload path has a leading "/"
-	if path == "" || string(path[0]) != "/" {
-		path = "/" + path
-	}
-
-	// make sure upload path has "/" between dir and filename
-	if string(path[len(path)-1]) != "/" {
-		path += "/"
-	}
-
 	// open our file
 	f, err := os.Open(file)
 	if err != nil {
@@ -90,8 +76,8 @@ func (c *DropBoxClient) UploadFile(file, path string) *types.APIError {
 		return &types.APIError{Code: types.COMMAND_FAILED, Message: fmt.Sprintf("problem statting\n%s\n", err)}
 	}
 
-	// upload and overwrite if it exists
-	uplpoadArg := files.NewUploadArg(path + fileInfo.Name())
+	// upload and overwrite if it exists (leading and trailing / needed)
+	uplpoadArg := files.NewUploadArg(c.formatPath(path, true, true, false, false) + fileInfo.Name())
 	uplpoadArg.Mode.Tag = "overwrite"
 	if _, err = c.Srv.Upload(uplpoadArg, f); err != nil {
 		return &types.APIError{Code: types.CLIENT_FAILED, Message: fmt.Sprintf("%s\n", err)}
@@ -102,19 +88,8 @@ func (c *DropBoxClient) UploadFile(file, path string) *types.APIError {
 // DeleteFile deletes the file or folder (and all files in it) at the given path
 func (c *DropBoxClient) DeleteFile(path string) *types.APIError {
 
-	// make sure the file we are downloading has a path that begins with "/"
-	slash := "/"
-	if string(path[0]) == "/" {
-		slash = ""
-	}
-
-	// remove trailing "/"
-	if string(path[len(path)-1]) == "/" {
-		path = path[:len(path)-1]
-	}
-
-	// attempt to delete file
-	if _, err := c.Srv.DeleteV2(files.NewDeleteArg(slash + path)); err != nil {
+	// attempt to delete file (leading / needed, remove trailing /)
+	if _, err := c.Srv.DeleteV2(files.NewDeleteArg(c.formatPath(path, true, false, false, true))); err != nil {
 		return &types.APIError{Code: types.CLIENT_FAILED, Message: fmt.Sprintf("%s\n", err)}
 	}
 	return nil
@@ -122,27 +97,15 @@ func (c *DropBoxClient) DeleteFile(path string) *types.APIError {
 
 func (c *DropBoxClient) DownloadFile(filePath, downloadPath string) *types.APIError {
 
-	// make sure the file we are downloading has a path that begins with "/"
-	slash := "/"
-	if string(filePath[0]) == "/" {
-		slash = ""
-	}
-
-	// download the file from Dropbox
-	res, contents, err := c.Srv.Download(files.NewDownloadArg(slash + filePath))
+	// download the file from Dropbox (leading / needed)
+	res, contents, err := c.Srv.Download(files.NewDownloadArg(c.formatPath(filePath, true, false, false, false)))
 	if err != nil {
 		return &types.APIError{Code: types.CLIENT_FAILED, Message: fmt.Sprintf("%s\n", err)}
 	}
 	defer contents.Close()
 
-	// make sure we have a slash at the end of our downloadPath
-	slash = "/"
-	if downloadPath == "" || downloadPath[len(downloadPath)-1] == '/' {
-		slash = ""
-	}
-
-	// create file on local machine
-	f, err := os.Create(downloadPath + slash + res.Name)
+	// create file on local machine (trailing / needed)
+	f, err := os.Create(c.formatPath(downloadPath, false, true, false, false) + res.Name)
 	if err != nil {
 		return &types.APIError{Code: types.COMMAND_FAILED, Message: fmt.Sprintf("%s\n", err)}
 	}
