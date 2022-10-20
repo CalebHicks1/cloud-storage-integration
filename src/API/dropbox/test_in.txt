@@ -1,0 +1,7 @@
+{"command":"list","path":"","files":[]}
+{"command":"upload","path":"/Main","files":["hello.txt"]}
+{"command":"upload","path":"/Main/","files":["bye.txt"]}
+{"command":"list","path":"Main/","files":[]}
+{"command":"download","path":"hi/","files":["Main/bye.txt"]}
+{"command":"delete","path":"","files":["/Main/"]}
+{"command":"shutdown","path":"","files":[]}

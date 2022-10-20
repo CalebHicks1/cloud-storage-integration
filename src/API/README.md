@@ -9,7 +9,7 @@ Below are the valid operations that the API clients support along with their val
 
 Valid path inputs:
 - root directory: `"/"`, `""`
-- other directories: `"/dir1/dir2/"`, `"/dir1/dir2"`, `"dir1/dir2/"`, `"dir1/dir2"`
+- other directories: `"/dir1/dir2/"`, `"/dir1/dir2"`, `"dir1/dir2/"`, `"dir1/dir2"` (include leading `/` to start at root)
 
 Valid file inputs:
 - provide the absolute path to the file on your system to be uploaded
@@ -25,35 +25,35 @@ How to format a call that lists all files in a directory given by the `path` fie
 
 input JSON = `{"command":"list","path":"<valid_path>","files":[]}`
 
-response JSON = `[<file1>, <file2>, ...]`, `{<ERROR_CODE>}` (on error)
+response JSON = `[<file1>, <file2>, ...]`, `{"code":<ERROR_CODE>,"message":"..."}` (on error)
 
 ### Upload Files - `upload`
 How to format a call that uploads files given by the `file` array to a directory given by the `path` field. If the file already exists, overwrite the file.
 
 input JSON = `{"command":"upload","path":"<valid_path>","files":["<filename1>", "<filename2>", ...]}`
 
-response JSON = `{<ERROR_CODE>}`
+response JSON = `{"code":<ERROR_CODE>,"message":"..."}`
 
 ### Download Files - `download`
 How to format a call that downloads the files from the API given by the paths (should be paths in the API not your local machine) in the `file` array to a local directory given by the `path` field.
 
 input JSON = `{"command":"download","path":"<valid_path>","files":["<valid_path_to_file1>", "<valid_path_to_file2>", ...]}`
 
-response JSON = `{<ERROR_CODE>}`
+response JSON = `{"code":<ERROR_CODE>,"message":"..."}`
 
 ### Delete Files - `delete`
 How to format a call that deletes a file/folder (folders recursively delete) given by the `path` field.
 
 input JSON = `{"command":"delete","path":"","files":["<valid_path_to_file1>", "<valid_path_to_file2>", ...]}`
 
-response JSON = `{<ERROR_CODE>}`
+response JSON = `{"code":<ERROR_CODE>,"message":"..."}`
 
 ### Shutdown Client - `shutdown`
 How to terminate a API client.
 
 input JSON = `{"command":"shutdown","path":"","files":[]}`
 
-response JSON = `{<ERROR_CODE>}`
+response JSON = `{"code":<ERROR_CODE>,"message":"..."}`
 
 ## Error Codes
 
@@ -61,7 +61,7 @@ response JSON = `{<ERROR_CODE>}`
 Command succeeded.
 
 ### 1 - Client Failed
-General error that tells the parent that the client failed.
+General error that tells the parent that the underlying API client failed.
 
 ### 2 - Command Failed
 General command related error that tells the parent that the command failed.
@@ -72,7 +72,7 @@ Tells the parent that the value of the `command` key is invalid.
 ### 4 - Invalid Input
 Tells the parent that the input passed to STDIN couldn't be parsed.
 
-### 5 - Invalid File
+### 5 - File Not Found
 Tells the parent that an invalid file was given when trying to upload or download.
 
 ### 6 - EOF
