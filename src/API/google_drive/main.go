@@ -184,7 +184,7 @@ func (c *GoogleDriveClient) UploadFile(file, path string) *types.APIError {
 	driveFile := &drive.File{Name: fileInfo.Name()}
 
 	// if file already exists, overwrite it
-	res, err := c.Srv.Files.List().Q(fmt.Sprintf("name='%s' and parents in '%s' and trashed=false", f.Name(), parent.Id)).Fields("files(id, name, size, mimeType)").Do()
+	res, err := c.Srv.Files.List().Q(fmt.Sprintf("name='%s' and parents in '%s' and trashed=false", fileInfo.Name(), parent.Id)).Fields("files(id, name, size, mimeType)").Do()
 	if err == nil && res != nil && res.Files != nil && len(res.Files) > 0 {
 		// attempt to update/overwrite the file (might have to add more at)
 		_, err = c.Srv.Files.Update(res.Files[0].Id, driveFile).Media(f).ProgressUpdater(func(now, size int64) { fmt.Fprintf(os.Stderr, "%d, %d\r", now, size) }).Do()
