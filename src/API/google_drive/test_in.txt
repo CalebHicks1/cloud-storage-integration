@@ -1,3 +1,4 @@
+{"command":"shutdown","path":"","files":[]}
 {"command":"upload","path":"","files":["hello_drive.txt"]}
 {"command":"shutdown","path":"","files":[]}
 {"command":"download","path":"","files":["hello_drive.txt"]}

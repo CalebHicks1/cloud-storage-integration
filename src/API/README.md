@@ -42,7 +42,7 @@ input JSON = `{"command":"download","path":"<valid_path>","files":["<valid_path_
 response JSON = `{"code":<ERROR_CODE>,"message":"..."}`
 
 ### Delete Files - `delete`
-How to format a call that deletes a file/folder (folders recursively delete) given by the `path` field.
+How to format a call that deletes files/folders (folders recursively delete) given by the entries in the `files` field.
 
 input JSON = `{"command":"delete","path":"","files":["<valid_path_to_file1>", "<valid_path_to_file2>", ...]}`
 
