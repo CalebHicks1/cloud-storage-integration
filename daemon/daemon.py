@@ -2,14 +2,13 @@ import os
 import time
 import signal
 import sys
+import json
 
-def spawn_api():
-
-    global to_api
-    global from_api
+def spawn_api(drive_data):
 
     #Pipe from parent to child
     read_end1, write_end1 = os.pipe()
+
 
     #Pipe from child to parent
     read_end2, write_end2 = os.pipe()
@@ -27,9 +26,9 @@ def spawn_api():
         os.dup2(write_end2, 2) #Our stderr will also be sent to the parent
 
         #Exec the google drive client
-        os.chdir("../src/API/google_drive/")
-        exec_dir = "./google_drive_client"
-        os.execve(exec_dir, ["/usr/bin/sudo", exec_dir], {})
+        os.chdir(drive_data[2])
+        executable = drive_data[1]
+        os.execve(executable, ["/usr/bin/sudo", executable], {})
 
     else: #parent process
         
@@ -37,67 +36,93 @@ def spawn_api():
         os.close(read_end1)
 
         #Set our global file descriptors to the proper pipes
-        to_api = write_end1
-        from_api = read_end2
+        drive_data[3] = write_end1
+        drive_data[4] = read_end2
 
 
 
 
 
-def shutdown_api():
-    os.write(to_api, bytes('{"command":"shutdown"}\n', 'utf-8'))
+def shutdown_api(drive_data):
+    os.write(drive_data[3], bytes('{"command":"shutdown"}\n', 'utf-8'))
 
 
 
 def sigint_handler(signal, frame):
     print("\nCaptured SIGINT")
-    shutdown_api()
+    for drive in drives:
+        shutdown_api(drive)
     sys.exit(0)
 
 
 
 def main():
 
+    global drives
+
     signal.signal(signal.SIGINT, sigint_handler)
 
-    spawn_api()
+    for drive in drives:
+        spawn_api(drive)
 
+    #print("File descriptors: " + str(drives[0][3]) + " " + str(to_api))
     while True:
 
         #Creates a list of filenames and the time they were last modified from the given directory
         #Currently only includes files modified within the last five minutes
-        files = [[x, os.path.getmtime(path + x)] for x in os.listdir(path) if os.path.getmtime(path + x) > time.time() - 300]
+        files = [[x, os.path.getmtime(path + x)] for x in os.listdir(path) if os.path.getmtime(path + x) > time.time() - 30000000]
 
-        #Shows the files that will be uploaded
-        print(files)
+        if not files:
+            time.sleep(8)
+            print("No files this time")
+            continue
 
-        #Formats a string to hold a json list of the files that need to be uploaded 
-        filenames = "["
-        for cur_file in files:
-            filenames += ('"' + path + cur_file[0] +'", ')
-        filenames = filenames[:-2] + "]"
+        #Get list of all files from all drives
+        remote_filelists = []
+        i = 0
+        for drive in drives:
+            os.write(drive[3], bytes('{"command":"list","path":"","files":[]}\n', 'utf-8'))
 
-        #Uploads all recently modified files to google drive
-        os.write(to_api, bytes('{"command":"upload","path":"","files":' + filenames + '}\n', 'utf-8'))
+            output = os.read(drive[4], 1024).decode('utf-8')
 
-        #Get list of all files from Google Drive
-        #os.write(to_api, bytes('{"command":"list","path":"","files":[]}\n', 'utf-8'))
+            if output.__contains__("["): #Parse the JSON returned by the API
+                y = json.loads(output)
+                print(y)
+                remote_filelists.append(y)
+                
+            else: #Sometimes drives return plain strings which would crash the json parser
+                print(output)
+            i = i + 1
 
-        #Prints output from google
-        output = os.read(from_api, 1024)
-        print(output.decode('utf-8'))
+
+        #At this point we have a list of all local files which have been modified in 'files', 
+        #and a list of files from each drive all stored in 'remote_filelists'
+
+
+        #Formats a string to hold a json list of the files that need to be uploaded
+        if files:
+            filenames = "["
+            for cur_file in files:
+                filenames += ('"' + path + cur_file[0] +'", ')
+            filenames = filenames[:-2] + "]"
+
+            #Loops through and writes to all 
+            #for drive in drives:
+                #os.write(drive[3], bytes('{"command":"upload","path":"","files":' + filenames + '}\n', 'utf-8'))
+
 
         #Runs every 5 minutes
-        time.sleep(300)
-
-
+        time.sleep(8)
 
 
 #Path to the test directory we are observing
 path = "/home/ubuntu/cache_dir/"
 
-#Global variables for the pipes
-to_api, from_api = -1, -1
+#Name of drive, drive executable, path to drive executable, to_api filedescriptor, from_api file descriptor
+drives = [
+    ["google_drive", "./google_drive_client", "../src/API/google_drive/", -1, -1], 
+    #["dropbox", "", "../src/API/dropbox/", -1, -1]
+    ]
 
 
 main()
