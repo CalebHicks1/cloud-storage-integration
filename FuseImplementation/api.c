@@ -42,7 +42,7 @@ params:
     exec_dir: directory of module executable
     len: length of exec_dir
 */
-int spawn_module(int *in, int *out,  pid_t *pid, char *exec_dir)
+int spawn_module(int *in, int *out,  pid_t *pid, char *exec_dir, char *exec_arg)
 {
 
     int write_pipe[2]; // pipe that the child writes to
@@ -73,7 +73,7 @@ int spawn_module(int *in, int *out,  pid_t *pid, char *exec_dir)
         close(read_pipe[WRITE_END]);
         // printf("exec...\n");
 
-        char *args[] = {"/usr/bin/sudo", exec_dir, NULL};
+        char *args[] = { /*"/usr/bin/sudo",*/ exec_dir, exec_arg, NULL};
         if (execv(exec_dir, args) == -1)
         {
             return -1;

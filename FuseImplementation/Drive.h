@@ -41,9 +41,9 @@ struct Drive_Object
 	int num_files;
 	//Sub_Directory sub_directories[NUM_SUBDIRS];
 	int num_sub_directories;
-	
-	
+	char exec_arg[LEN_EXEC_PATH];
 	struct list subdirectories_list;
+	
 };
 typedef struct Drive_Object Drive_Object;
 

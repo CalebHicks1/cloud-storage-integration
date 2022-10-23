@@ -110,7 +110,7 @@ int populate_filelists()
 
 		// launch executable
 		fuse_log("running module at %s\n", Drives[i].exec_path);
-		spawn_module(&in, &out, &Drives[i].pid, Drives[i].exec_path);
+		spawn_module(&in, &out, &Drives[i].pid, Drives[i].exec_path, Drives[i].exec_arg);
 
 		Drives[i].in = in;
 		Drives[i].out = out;
