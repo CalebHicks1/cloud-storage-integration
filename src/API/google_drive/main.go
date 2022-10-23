@@ -25,15 +25,15 @@ import (
 // https://www.youtube.com/watch?v=OdyXIi6DGYw&ab_channel=AlexPliutau is better
 
 // Retrieve a token, saves the token, then returns the generated client.
-func getClient(config *oauth2.Config, tokFile *string) *http.Client {
+func getClient(config *oauth2.Config) *http.Client {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
 	// time.
-	//tokFile := "token.json"
-	tok, err := tokenFromFile(*tokFile)
+	tokFile := "token.json"
+	tok, err := tokenFromFile(tokFile)
 	if err != nil {
 		tok = getTokenFromWeb(config)
-		saveToken(*tokFile, tok)
+		saveToken(tokFile, tok)
 	}
 	return config.Client(context.Background(), tok)
 }
@@ -88,9 +88,7 @@ type GoogleDriveClient struct {
 func main() {
 
 	debug := flag.Bool("debug", false, "prints successs statments for debugging")
-	token := flag.String("token", "token.json", "read from this token file")
 	flag.Parse()
-	//fmt.Fprintf(os.Stderr, "token: %s\n", *token)
 
 	ctx := context.Background()
 	b, err := os.ReadFile("credentials.json")
@@ -103,7 +101,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
-	httpClient := getClient(config, token)
+	httpClient := getClient(config)
 
 	srv, err := drive.NewService(ctx, option.WithHTTPClient(httpClient))
 	if err != nil {
