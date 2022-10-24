@@ -1,4 +1,4 @@
-Generated at: 2022-10-24 15:21:22
+Generated at: 2022-10-24 15:33:36
 ---------> [do_read] Subdirectory
 ---------> [do_read] Subdirectory
 ---------> [do_read] Subdirectory
@@ -14,40 +14,15 @@ Generated at: 2022-10-24 15:21:22
 ---------> [do_read] {"command":"download", "path":"/home/james/fresh/cloud-storage-integration/FuseImplementation/mnt/ramdisk/", "files":["test1"]}
 ---------> [get_file] Could not find file /Google_Drive/whatever/.hidden
 ---------> [do_getattr] Could not find file /Google_Drive/whatever/.hidden
----------> [do_read] Unsuccessfully downloaded {5}
-/home/james/fresh/cloud-storage-integration/FuseImplementation/mnt/ramdisk/
+---------> [do_read] Unsuccessfully downloaded {"co/home/james/fresh/cloud-storage-integration/FuseImplementation/mnt/ramdisk/
 ---------> [do_read] The drive chosen is Google_Drive
 ---------> [do_read] {"command":"download", "path":"/home/james/fresh/cloud-storage-integration/FuseImplementation/mnt/ramdisk/", "files":["test1"]}
----------> [do_read] Unsuccessfully downloaded {5}
-/home/james/fresh/cloud-storage-integration/FuseImplementation/mnt/ramdisk/
+---------> [do_read] Unsuccessfully downloaded {"co/home/james/fresh/cloud-storage-integration/FuseImplementation/mnt/ramdisk/
 ---------> [handle_subdirectory] Called for /Google_Drive/whatever
 ---------> [do_read] Subdirectory
----------> [handle_subdirectory] Called for /Google_Drive/whatever
 ---------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo
 ---------> [handle_subdirectory] wasnt null
 ---------> [handle_subdirectory] was element
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/.hidden
----------> [do_read] Subdirectory
 ---------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
+---------> [handle_subdirectory] Called for /Google_Drive/whatever
 ---------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo
----------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo/boo
----------> [handle_subdirectory] wasnt null
----------> [handle_subdirectory] was element
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/boo/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/boo/.hidden
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo/boo
----------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo/boo/ahhhhh
----------> [handle_subdirectory] wasnt null
----------> [handle_subdirectory] was element
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [Subdirectory_find_file] searching here
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/boo/ahhhhh/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/boo/ahhhhh/.hidden
----------> [do_read] Subdirectory
