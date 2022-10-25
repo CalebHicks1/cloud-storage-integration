@@ -14,7 +14,8 @@
 #include "subdirectories/SubDirectory.h"
 
 #define LEN_DIRNAME 200
-#define LEN_EXEC_PATH 200
+#define LEN_EXEC_PATH 400
+#define LEN_EXEC_ARG 200
 //#define NUM_SUBDIRS 20
 //struct Sub_Directory
 //{
@@ -38,6 +39,7 @@ struct Drive_Object
 	int out;
 	pid_t pid;
 	char exec_path[LEN_EXEC_PATH];
+	char exec_arg[LEN_EXEC_ARG];
 	int num_files;
 	//Sub_Directory sub_directories[NUM_SUBDIRS];
 	int num_sub_directories;

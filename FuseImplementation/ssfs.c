@@ -44,8 +44,8 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 
 struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
 	{
-		{"Google_Drive", NULL, -1, -1, -1, "../src/API/google_drive/google_drive_client", 0, /*{},*/ 0},
-		{"NFS", NULL, -1, -1, -1, "../src/API/NFS/nfs_api", 0}
+		{"Google_Drive", NULL, -1, -1, -1, "../src/API/google_drive/google_drive_client", "", 0, /*{},*/ 0},
+		{"NFS", NULL, -1, -1, -1, "../src/API/NFS/nfs_api", "", 0}
 
 		// {"Test_Dir", NULL, -1, "./getFile", 0, {}, 0}
 };
