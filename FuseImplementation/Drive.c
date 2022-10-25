@@ -7,6 +7,23 @@ extern Drive_Object Drives[NUM_DRIVES];
 
 #define BASH
 
+void dump_file_descriptors(Drive_Object * drive)
+{
+	printf("| in: {");
+	for (int i = 0; i < MAX_EXECS; i++)
+	{
+		printf("%d, ", drive->in_fds[i]);
+	}
+	printf("}\n");
+	
+	printf("| out: {");
+	for (int i = 0; i < MAX_EXECS; i++)
+	{
+		printf("%d, ", drive->out_fds[i]);
+	}
+	printf("}\n");
+}
+
 void dump_drive(Drive_Object * drive)
 {
 	if (drive == NULL) {
@@ -15,6 +32,7 @@ void dump_drive(Drive_Object * drive)
 	}
 	//This Drives attributes
 	printf("| %s (%d files)\n", &(drive->dirname[0]), drive->num_files);
+	dump_file_descriptors(drive);
 	//Files
 	for (int i = 0; i < drive->num_files; i++) {
 		json_t * curr_file = json_array_get(drive->FileList, i);
@@ -345,7 +363,7 @@ int listAsArray(json_t **list, struct Drive_Object * drive, char *optional_path)
 	char execOutput[100][LINE_MAX_BUFFER_SIZE] = {};
 
 	int a = myGetFileList(execOutput, drive->exec_path, optional_path, drive->in, drive->out);
-
+	fuse_log("First a: %d\n", a);
 	json_t *fileListAsArray = NULL;
 
 	if (a < 1)
@@ -361,6 +379,23 @@ int listAsArray(json_t **list, struct Drive_Object * drive, char *optional_path)
 		return 0;
 	}
 	*list = fileListAsArray;
+	//--------------------------
+	fuse_log("Now doing new listAsArray\n");
+	json_t **FileLists = calloc(sizeof(json_t *), drive->num_execs);
+	for (int exec_index = 0; exec_index < drive->num_execs; exec_index++)
+	{
+		json_t * currList = *(FileLists + exec_index);
+		char output[100][LINE_MAX_BUFFER_SIZE] = {};
+		a = myGetFileList(output, drive->exec_paths[exec_index], optional_path, drive->in_fds[exec_index], drive->out_fds[exec_index]);
+		if (a < 1)
+		{
+			fuse_log_error("GetFileList failed\n");
+			currList = NULL;
+			continue;
+		}
+		arraySize = parseJsonString(&currList, output, a);
+		fuse_log("arraysize: %d\n", arraySize);
+	}
 	return arraySize;
 }
 
