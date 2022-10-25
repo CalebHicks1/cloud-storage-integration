@@ -105,23 +105,28 @@ int populate_filelists()
 	int res = 0;
 	for (int i = 0; i < NUM_DRIVES; i++)
 	{
-		int out = -1; // fd to read from executable
-		int in = -1;  // fd to write to executable
-
-		// launch executable
-		fuse_log("running module at %s\n", Drives[i].exec_path);
-		spawn_module(&in, &out, &Drives[i].pid, Drives[i].exec_path, Drives[i].exec_arg);
-
-		Drives[i].in = in;
-		Drives[i].out = out;
-		list_init(&(Drives[i].subdirectories_list));
-		// Populate FileList
-		Drives[i].num_files = listAsArray(&(Drives[i].FileList), Drives[i].exec_path, NULL, Drives[i].in, Drives[i].out);
-		if (Drives[i].num_files < 0)
+		for (int exec_index = 0; exec_index < Drives[i].num_executables; exec_index++)
 		{
-			fuse_log_error("Populating %s failed\n", Drives[i].dirname);
-			res = -1;
+			int out = -1; // fd to read from executable
+			int in = -1;  // fd to write to executable
+
+			// launch executable
+			fuse_log("running module at %s\n", Drives[i].exec_path);
+			spawn_module(&in, &out, &Drives[i].pid[exec_index], Drives[i].exec_path[exec_index], Drives[i].exec_arg[exec_index]);
+
+			Drives[i].in[exec_index] = in;
+			Drives[i].out[exec_index] = out;
+			list_init(&(Drives[i].subdirectories_list));
+			// Populate FileList
+			Drives[i].num_files = listAsArray(&(Drives[i].FileList), Drives[i].exec_path[exec_index], NULL, Drives[i].in[exec_index], Drives[i].out[exec_index]);
+			if (Drives[i].num_files < 0)
+			{
+				fuse_log_error("Populating %s failed\n", Drives[i].dirname);
+				res = -1;
+			}
+
 		}
+
 	}
 	return res;
 }
@@ -168,10 +173,11 @@ int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char *optional_
 /**
  * Uses API to get contents of a subdirectory, placing this contents in param list
  */
-int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in, int out)
+int get_subdirectory_contents(json_t **list, int drive_index, char * path, int in[MAX_EXECUTABLES], int out[MAX_EXECUTABLES])
 {
+	// TODO NOW TODONOW
 	fuse_log("Generating filelist for subdirectory %s\n", path);
-	return listAsArray(list, Drives[drive_index].exec_path, path, in, out);
+	return listAsArray(list, Drives[drive_index].exec_path[0], path, in, out);
 }
 
 
@@ -269,7 +275,7 @@ SubDirectory *handle_subdirectory(char *path)
  * optional_path: if not NULL, corresponds to the subdirectory in which we want to
  * list the files - if NULL, list at root level of the drive
  */
-int listAsArray(json_t **list, char *cmd, char *optional_path, int in, int out)
+int listAsArray(json_t** list, char cmd[MAX_EXECUTABLES][LEN_EXEC_PATH], char * optional_path, int in[MAX_EXECUTABLES], int out[MAX_EXECUTABLES])
 {
 	char execOutput[100][LINE_MAX_BUFFER_SIZE] = {};
 
