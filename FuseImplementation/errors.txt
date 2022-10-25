@@ -1,28 +1,30 @@
-Generated at: 2022-10-24 15:33:36
----------> [do_read] Subdirectory
----------> [do_read] Subdirectory
----------> [do_read] Subdirectory
+Generated at: 2022-10-24 21:41:55
+---------> [handle_subdirectory] Called for /Google_Drive/myFolder
 ---------> [get_subdirectory] Failed....
----------> [get_file] Could not find file /Google_Drive/.hidden
----------> [do_getattr] Could not find file /Google_Drive/.hidden
+---------> [handle_subdirectory] was null
+---------> [handle_subdirectory] type: 2
+---------> [get_subdirectory] Failed....
+---------> [handle_subdirectory] Called for /Google_Drive/myFolder/subfolder
+---------> [handle_subdirectory] wasnt null
+---------> [handle_subdirectory] was element
 ---------> [handle_subdirectory] Called for /Google_Drive/whatever
 ---------> [get_subdirectory] Failed....
 ---------> [handle_subdirectory] was null
 ---------> [handle_subdirectory] type: 2
 ---------> [get_subdirectory] Failed....
----------> [do_read] The drive chosen is Google_Drive
----------> [do_read] {"command":"download", "path":"/home/james/fresh/cloud-storage-integration/FuseImplementation/mnt/ramdisk/", "files":["test1"]}
----------> [get_file] Could not find file /Google_Drive/whatever/.hidden
----------> [do_getattr] Could not find file /Google_Drive/whatever/.hidden
----------> [do_read] Unsuccessfully downloaded {"co/home/james/fresh/cloud-storage-integration/FuseImplementation/mnt/ramdisk/
----------> [do_read] The drive chosen is Google_Drive
----------> [do_read] {"command":"download", "path":"/home/james/fresh/cloud-storage-integration/FuseImplementation/mnt/ramdisk/", "files":["test1"]}
----------> [do_read] Unsuccessfully downloaded {"co/home/james/fresh/cloud-storage-integration/FuseImplementation/mnt/ramdisk/
----------> [handle_subdirectory] Called for /Google_Drive/whatever
----------> [do_read] Subdirectory
 ---------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo
 ---------> [handle_subdirectory] wasnt null
 ---------> [handle_subdirectory] was element
+---------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo/boo
+---------> [handle_subdirectory] wasnt null
+---------> [handle_subdirectory] was element
 ---------> [Subdirectory_find_file] searching here
----------> [handle_subdirectory] Called for /Google_Drive/whatever
----------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo
+---------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo/boo/ahhhhh
+---------> [handle_subdirectory] wasnt null
+---------> [handle_subdirectory] was element
+---------> [Subdirectory_find_file] searching here
+---------> [handle_subdirectory] Called for /NFS/dir1
+---------> [get_subdirectory] Failed....
+---------> [handle_subdirectory] was null
+---------> [handle_subdirectory] type: 2
+---------> [get_subdirectory] Failed....
