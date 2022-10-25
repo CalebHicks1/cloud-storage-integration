@@ -15,7 +15,7 @@
 
 #define LEN_DIRNAME 200
 #define LEN_EXEC_PATH 400
-#define LEN_EXEC_ARG 200
+//#define LEN_EXEC_ARG 200
 //#define NUM_SUBDIRS 20
 //struct Sub_Directory
 //{
@@ -31,6 +31,7 @@
 
 //----------------------------------
 
+#define MAX_EXECS 4
 struct Drive_Object
 {
 	char dirname[LEN_DIRNAME];
@@ -39,12 +40,16 @@ struct Drive_Object
 	int out;
 	pid_t pid;
 	char exec_path[LEN_EXEC_PATH];
-	char exec_arg[LEN_EXEC_ARG];
+	char exec_arg[LEN_EXEC_PATH];
 	int num_files;
 	//Sub_Directory sub_directories[NUM_SUBDIRS];
 	int num_sub_directories;
-	
-	
+	int num_execs;
+	char exec_paths[MAX_EXECS][LEN_EXEC_PATH];
+	char exec_args[MAX_EXECS][LEN_EXEC_PATH];
+	int in_fds[MAX_EXECS];
+	int out_fds[MAX_EXECS];
+	pid_t pids[MAX_EXECS];
 	struct list subdirectories_list;
 };
 typedef struct Drive_Object Drive_Object;
@@ -63,7 +68,8 @@ json_t * get_file(int drive_index, char * path) ;
 //Getting FileLists
 int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char * optional_path, int in, int out);
 //int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd);
-int listAsArray(json_t** list, char* cmd, char * optional_path, int in, int out);
+//int listAsArray(json_t** list, char* cmd, char * optional_path, int in, int out);
+int listAsArray(json_t **list, struct Drive_Object * drive, char *optional_path);
 
 //Subdirectories
 int get_subdirectory_contents(json_t ** list, int drive_index,  char *path, int in, int out);

@@ -165,6 +165,7 @@ int populate_filelists()
 	int res = 0;
 	for (int i = 0; i < NUM_DRIVES; i++)
 	{
+		
 		int out = -1; // fd to read from executable
 		int in = -1;  // fd to write to executable
 
@@ -172,16 +173,25 @@ int populate_filelists()
 		fuse_log("running module at %s\n", Drives[i].exec_path);
 		spawn_module(&in, &out, &Drives[i].pid, Drives[i].exec_path, Drives[i].exec_arg);
 
+		for (int exec_index = 0; exec_index < Drives[i].num_execs; exec_index++)
+		{
+			fuse_log("New version: spawning executable #%d for drive %s", exec_index, Drives[i].dirname);
+			spawn_module(&Drives[i].in_fds[exec_index], &Drives[i].out_fds[exec_index], &Drives[i].pids[exec_index],
+				Drives[i].exec_paths[exec_index], Drives[i].exec_args[exec_index]);
+		}
+
 		Drives[i].in = in;
 		Drives[i].out = out;
 		list_init(&(Drives[i].subdirectories_list));
 		// Populate FileList
-		Drives[i].num_files = listAsArray(&(Drives[i].FileList), Drives[i].exec_path, NULL, Drives[i].in, Drives[i].out);
+		Drives[i].num_files = listAsArray(&(Drives[i].FileList), &Drives[i], NULL);
 		if (Drives[i].num_files < 0)
 		{
 			fuse_log_error("Populating %s failed\n", Drives[i].dirname);
 			res = -1;
 		}
+
+		dump_drive(&Drives[i]);
 	}
 	//int ret = Drive_delete("/Google_Drive/whatever");
 	return res;
@@ -232,7 +242,7 @@ int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char *optional_
 int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in, int out)
 {
 	fuse_log("Generating filelist for subdirectory %s\n", path);
-	return listAsArray(list, Drives[drive_index].exec_path, path, in, out);
+	return listAsArray(list, &Drives[drive_index], path);
 }
 
 
@@ -330,11 +340,11 @@ SubDirectory *handle_subdirectory(char *path)
  * optional_path: if not NULL, corresponds to the subdirectory in which we want to
  * list the files - if NULL, list at root level of the drive
  */
-int listAsArray(json_t **list, char *cmd, char *optional_path, int in, int out)
+int listAsArray(json_t **list, struct Drive_Object * drive, char *optional_path)
 {
 	char execOutput[100][LINE_MAX_BUFFER_SIZE] = {};
 
-	int a = myGetFileList(execOutput, cmd, optional_path, in, out);
+	int a = myGetFileList(execOutput, drive->exec_path, optional_path, drive->in, drive->out);
 
 	json_t *fileListAsArray = NULL;
 
