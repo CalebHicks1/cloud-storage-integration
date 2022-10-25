@@ -1,4 +1,4 @@
-Generated at: 2022-10-24 21:41:55
+Generated at: 2022-10-24 22:09:52
 ---------> [handle_subdirectory] Called for /Google_Drive/myFolder
 ---------> [get_subdirectory] Failed....
 ---------> [handle_subdirectory] was null
@@ -23,8 +23,5 @@ Generated at: 2022-10-24 21:41:55
 ---------> [handle_subdirectory] wasnt null
 ---------> [handle_subdirectory] was element
 ---------> [Subdirectory_find_file] searching here
----------> [handle_subdirectory] Called for /NFS/dir1
----------> [get_subdirectory] Failed....
----------> [handle_subdirectory] was null
----------> [handle_subdirectory] type: 2
----------> [get_subdirectory] Failed....
+---------> [Subdirectory_find_file] searching here
+---------> [Subdirectory_find_file] searching here
