@@ -381,23 +381,8 @@ int listAsArray(json_t **list, struct Drive_Object * drive, char *optional_path)
 	}
 	*list = fileListAsArray;
 	//--------------------------
-	fuse_log("Now doing new listAsArray\n");
-	json_t **FileLists = calloc(sizeof(json_t *), drive->num_execs);
-	for (int exec_index = 0; exec_index < drive->num_execs; exec_index++)
-	{
-		json_t * currList = *(FileLists + exec_index);
-		char output[100][LINE_MAX_BUFFER_SIZE] = {};
-		a = myGetFileList(output, drive->exec_paths[exec_index], optional_path, drive->in_fds[exec_index], drive->out_fds[exec_index]);
-		if (a < 1)
-		{
-			fuse_log_error("GetFileList failed for executable %s\n", drive->exec_paths[exec_index]);
-			currList = NULL;
-			continue;
-		}
-		arraySize = parseJsonString(&currList, output, a);
-		fuse_log("arraysize: %d\n", arraySize);
-		dump_file_list(currList);
-	}
+	fuse_log("Now calling listAsArrayV2");
+	listAsArrayV2(list, drive, optional_path);
 	return arraySize;
 }
 
