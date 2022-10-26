@@ -31,6 +31,66 @@ void dump_drive(Drive_Object * drive)
 	
 }
 
+//Path is the absolute path
+int Drive_delete(char * path)
+{
+	int drive_index = get_drive_index(path);
+	if (drive_index < 0)
+	{
+		fuse_log_error("Could not find drive for %s\n", path);
+	}
+	json_t * file = get_file(drive_index, path);
+	if (file == NULL)
+	{
+		fuse_log_error("Could not find file %s\n", path);
+		return -1;
+	}
+	
+	Get_Result * result = get_subdirectory(drive_index, path);
+	if (result->type == ROOT)
+	{
+		fuse_log("Determined to be in root directory\n");
+		int file_index = get_file_index(path, drive_index);
+		int ret = json_list_remove(&Drives[drive_index].FileList, file, Drives[drive_index].num_files);
+		if (ret >= 0)
+		{
+			//Success
+			Drives[drive_index].num_files--;
+			return 0;
+		}
+		else
+		{
+			fuse_log_error("Deleting file %s failed\n", path);
+			return -1;
+		}
+		
+	}
+	//File is in a subdirectory...
+	
+	if (result->type == ELEMENT && result->subdirectory != NULL)
+	{
+		fuse_log("Determined to be in a subdirectory\n");
+		//This is the only case we support - removing directories will be another function
+		int ret = json_list_remove(&result->subdirectory->FileList, file, result->subdirectory->num_files);
+		if (ret >= 0)
+		{
+			//Success
+			result->subdirectory->num_files--;
+			return 0;
+		}
+		else
+		{
+			fuse_log_error("Failed to remove file %s from subdirectory\n", path);
+			return -1;
+		}
+	}
+	else
+	{
+		fuse_log_error("Unexpected error\n");
+		return -1;
+	}
+}
+
 /**
  * Insert a newly generated file into drive. Path should contain the full path of the file,
  * while the json representation should have the name set to be the relative path
@@ -123,6 +183,7 @@ int populate_filelists()
 			res = -1;
 		}
 	}
+	//int ret = Drive_delete("/Google_Drive/whatever");
 	return res;
 }
 
