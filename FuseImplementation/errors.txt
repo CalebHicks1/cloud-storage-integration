@@ -1,0 +1,9 @@
+Generated at: 2022-10-25 20:45:10
+---------> [handle_subdirectory] Called for /Google_Drive/myFolder
+---------> [get_subdirectory] Failed....
+---------> [handle_subdirectory] was null
+---------> [handle_subdirectory] type: 2
+---------> [get_subdirectory] Failed....
+---------> [handle_subdirectory] Called for /Google_Drive/myFolder/subfolder
+---------> [handle_subdirectory] wasnt null
+---------> [handle_subdirectory] was element

@@ -54,7 +54,7 @@ int spawn_module(int *in, int *out,  pid_t *pid, char *exec_dir)
 
     // create child process
     pid_t child_pid = fork();
-    if (child_pid != 0)
+    if (child_pid == 0)
     { // child process
 
         // the child writes to write_pipe[WRITE_END]
@@ -73,7 +73,7 @@ int spawn_module(int *in, int *out,  pid_t *pid, char *exec_dir)
         close(read_pipe[WRITE_END]);
         // printf("exec...\n");
 
-        char *args[] = {"/usr/bin/sudo", exec_dir, NULL};
+        char *args[] = {/*"/usr/bin/sudo",*/ exec_dir, NULL};
         if (execv(exec_dir, args) == -1)
         {
             return -1;
