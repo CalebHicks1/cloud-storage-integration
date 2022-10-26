@@ -20,6 +20,30 @@ def main():
 
     shutdown_fuse(fuse_proc) # unmount fuse, delete directory
 
+# Tests ---------------------------------------------------------
+
+"""
+    To add new tests:
+    make a call to run_test with a command to be run in the shell
+    and expected output.
+"""
+def test_read():
+    print("\nTesting Read -------------\n")
+
+    # Check that we can read a file that does not exist in the cache
+    output("rm mnt/ramdisk/testread.txt") # remove file from cache. don't care about output
+    run_test(
+        f"cat {FUSE_MOUNT_POINT}/Google_Drive/testread.txt", 
+        "this is a file for unit tests, please do not change it"
+    )
+
+    # Check that file exists in cache
+    run_test( 
+        f"cat mnt/ramdisk/testread.txt", 
+        "this is a file for unit tests, please do not change it"
+    )
+
+
 # Helpers -------------------------------------------------------
 
 def setup_fuse():
@@ -55,33 +79,7 @@ def run_test(command, expected):
     print(f"Running command: [{command}]")
     actual = output(command)
     compare(actual, expected)
-    print()
-
-# Tests ---------------------------------------------------------
-
-"""
-    To add new tests:
-    make a call to run_test with a command to be run in the shell
-    and expected output.
-"""
-def test_read():
-    print("\nTesting Read -------------\n")
-
-    # Check that we can read a file that does not exist in the cache
-    output("rm mnt/ramdisk/testread.txt") # remove file from cache. don't care about output
-    run_test(
-        f"cat {FUSE_MOUNT_POINT}/Google_Drive/testread.txt", 
-        "this is a file for unit tests, please do not change it"
-    )
-
-    # Check that file exists in cache
-    run_test( 
-        f"cat mnt/ramdisk/testread.txt", 
-        "this is a file for unit tests, please do not change it"
-    )
-
-    
-    
+    print()    
 
 if __name__ == '__main__':
     main()
