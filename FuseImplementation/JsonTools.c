@@ -1,5 +1,26 @@
 #include "JsonTools.h"
 
+int json_list_remove(json_t ** filelist, json_t * file, int num_files)
+{
+	json_t * match = NULL;
+	int index = -1;
+	for (int i = 0; i < num_files; i++)
+	{
+		json_t * curr_file = json_array_get(*filelist, i);
+		printf("curr file: %s\n", getJsonFileName(curr_file));
+		if (strcmp(getJsonFileName(file), getJsonFileName(curr_file)) == 0)
+		{
+			match = curr_file;
+			index = i;
+			break;
+		}
+	}
+	if (match == NULL)
+	{
+		return -1;
+	}
+	return json_array_remove(*filelist, index);
+}
 
 int json_list_append(json_t ** filelist, json_t * new_file)
 {
