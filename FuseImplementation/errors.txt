@@ -1,10 +1,48 @@
-Generated at: 2022-10-26 17:12:35
----------> [ListContainer_divide] You passed me no lists!
+Generated at: 2022-10-26 18:23:13
+---------> [ListContainer_intersection] You passed me no lists!
+---------> [handle_subdirectory] Called for /Google_Drive/myFolder
+---------> [get_subdirectory] Failed....
+---------> [handle_subdirectory] was null
+---------> [handle_subdirectory] type: 2
+---------> [get_subdirectory] Failed....
+---------> [handle_subdirectory] Called for /Google_Drive/myFolder/subfolder
+---------> [handle_subdirectory] wasnt null
+---------> [handle_subdirectory] was element
+---------> [dump_file_list] Cannot dump list - is empty
+---------> [Subdirectory_find_file] searching here
 ---------> [handle_subdirectory] Called for /Google_Drive/whatever
 ---------> [get_subdirectory] Failed....
 ---------> [handle_subdirectory] was null
 ---------> [handle_subdirectory] type: 2
 ---------> [get_subdirectory] Failed....
+---------> [dump_file_list] Cannot dump list - is empty
 ---------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo
 ---------> [handle_subdirectory] wasnt null
 ---------> [handle_subdirectory] was element
+---------> [dump_file_list] Cannot dump list - is empty
+---------> [Subdirectory_find_file] searching here
+---------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo/boo
+---------> [handle_subdirectory] wasnt null
+---------> [handle_subdirectory] was element
+---------> [dump_file_list] Cannot dump list - is empty
+---------> [Subdirectory_find_file] searching here
+---------> [Subdirectory_find_file] searching here
+---------> [handle_subdirectory] Called for /Google_Drive/whatever/hi_woo/boo/ahhhhh
+---------> [handle_subdirectory] wasnt null
+---------> [handle_subdirectory] was element
+---------> [dump_file_list] Cannot dump list - is empty
+---------> [Subdirectory_find_file] searching here
+---------> [Subdirectory_find_file] searching here
+---------> [Subdirectory_find_file] searching here
+---------> [handle_subdirectory] Called for /NFS/dir1
+---------> [get_subdirectory] Failed....
+---------> [handle_subdirectory] was null
+---------> [handle_subdirectory] type: 2
+---------> [get_subdirectory] Failed....
+---------> [ListContainer_intersection] You passed me no lists!
+---------> [get_subdirectory] Failed....
+---------> [get_file] Could not find file /Google_Drive/mytest
+---------> [do_getattr] Could not find file /Google_Drive/mytest
+---------> [get_subdirectory] Failed....
+---------> [xmp_create] Current working dir: /mnt/c/merge_handle/cloud-storage-integration/FuseImplementation
+---------> [xmp_create] {"command":"upload", "path":"", "files":["/mnt/c/merge_handle/cloud-storage-integration/FuseImplementation/mnt/ramdisk/mytest"]}

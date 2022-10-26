@@ -75,14 +75,15 @@ ListContainer * ListContainer_union(json_t ** lists, int num_lists)
 
 ListContainer * ListContainer_intersection(json_t ** lists, int num_lists)
 {
-    if (num_lists == 0)
-    {
-        fuse_log_error("You passed me no lists!\n");
-        return NULL;
-    }
+    
     ListContainer * container = calloc(sizeof(ListContainer), 1);
     container->intersection = json_array();
     container->Union = NULL;
+    if (num_lists == 0)
+    {
+        fuse_log_error("You passed me no lists!\n");
+        return container;
+    }
     for (size_t index = 0; index < json_array_size(*lists); index++)
     {
         json_t * curr_file = json_array_get(*lists, index);
@@ -114,14 +115,14 @@ ListContainer * ListContainer_intersection(json_t ** lists, int num_lists)
 //atm, return the intersection of the lists
 json_t * list_handler(json_t ** lists, int num_lists) 
 {
-    fuse_log("Dumping lists passed to list_handler:\n");
-    for (int index = 0; index < num_lists; index++)
-    {
-        dump_file_list(*(lists + index));
-    }
+    // fuse_log("Dumping lists passed to list_handler:\n");
+    // for (int index = 0; index < num_lists; index++)
+    // {
+    //     dump_file_list(*(lists + index));
+    // }
 
     ListContainer * container = ListContainer_intersection(lists, num_lists);
-
+    return container->intersection;
 }
 
 
