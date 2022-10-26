@@ -3,6 +3,7 @@
 #include "subdirectories/SubDirectory.h"
 //#include "ssfs.h"
 #include "api.h"
+#include "MultiList.h"
 extern Drive_Object Drives[NUM_DRIVES];
 
 #define BASH
@@ -389,12 +390,13 @@ int listAsArray(json_t **list, struct Drive_Object * drive, char *optional_path)
 		a = myGetFileList(output, drive->exec_paths[exec_index], optional_path, drive->in_fds[exec_index], drive->out_fds[exec_index]);
 		if (a < 1)
 		{
-			fuse_log_error("GetFileList failed\n");
+			fuse_log_error("GetFileList failed for executable %s\n", drive->exec_paths[exec_index]);
 			currList = NULL;
 			continue;
 		}
 		arraySize = parseJsonString(&currList, output, a);
 		fuse_log("arraysize: %d\n", arraySize);
+		dump_file_list(currList);
 	}
 	return arraySize;
 }
