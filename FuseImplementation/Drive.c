@@ -45,11 +45,12 @@ int Drive_delete(char * path)
 		fuse_log_error("Could not find file %s\n", path);
 		return -1;
 	}
-	//See if file is in drive
 	
-	int file_index = get_file_index(path, drive_index);
-	if (index >= 0)
+	Get_Result * result = get_subdirectory(drive_index, path);
+	if (result->type == ROOT)
 	{
+		fuse_log("Determined to be in root directory\n");
+		int file_index = get_file_index(path, drive_index);
 		int ret = json_list_remove(&Drives[drive_index].FileList, file, Drives[drive_index].num_files);
 		if (ret >= 0)
 		{
@@ -65,9 +66,10 @@ int Drive_delete(char * path)
 		
 	}
 	//File is in a subdirectory...
-	Get_Result * result = get_subdirectory(drive_index, path);
+	
 	if (result->type == ELEMENT && result->subdirectory != NULL)
 	{
+		fuse_log("Determined to be in a subdirectory\n");
 		//This is the only case we support - removing directories will be another function
 		int ret = json_list_remove(&result->subdirectory->FileList, file, result->subdirectory->num_files);
 		if (ret >= 0)
