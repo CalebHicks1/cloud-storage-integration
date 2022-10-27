@@ -56,7 +56,6 @@ struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
 			0, //Num Sub directories
 			2, //Num execs
 			{"../src/API/google_drive/google_drive_client", "../src/API/google_drive/google_drive_client", "", ""},	//execs
-			//-token_file=secondary.json
 			{"", "-token_file=secondary.json", "", ""},	//args
 			{-1, -1, -1, -1},	//in_fds
 			{-1, -1, -1, -1},	//out_fds
