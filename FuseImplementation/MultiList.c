@@ -1,6 +1,8 @@
 #include "MultiList.h"
 #include "logging.h"
 
+// TODO : clean up leaks
+
 void dump_file_list(json_t * list)
 {
     if (list == NULL)
@@ -23,12 +25,13 @@ void dump_file_list(json_t * list)
 
 }
 
+//Files are equal if they have the same name
 int file_equals(json_t * a, json_t * b)
 {
-    //For now, define equals as just having the same name
     return strcmp(getJsonFileName(a), getJsonFileName(b));
 }
 
+//Return 0 if file is in list, -1 otherwise
 int file_exists_in_list(json_t * file, json_t * list)
 {
     for (size_t index = 0; index < json_array_size(list); index++)
@@ -41,7 +44,7 @@ int file_exists_in_list(json_t * file, json_t * list)
     return -1;
 }
 
-
+//Untested
 ListContainer * ListContainer_union(json_t ** lists, int num_lists)
 {
     if (num_lists == 0)
@@ -52,7 +55,7 @@ ListContainer * ListContainer_union(json_t ** lists, int num_lists)
     ListContainer * container = calloc(sizeof(ListContainer), 1);
     container->intersection = NULL;
     container->Union = json_array();
-    //Copy the first list Union
+    //Copy the first list 
     for (size_t index = 0; index < json_array_size(*lists); index++)
     {
         json_list_append(&container->Union, json_array_get(*lists, index));
@@ -72,7 +75,7 @@ ListContainer * ListContainer_union(json_t ** lists, int num_lists)
     return container;
 }
 
-
+//Return list of elements that exist in all lists
 ListContainer * ListContainer_intersection(json_t ** lists, int num_lists)
 {
     
@@ -98,12 +101,12 @@ ListContainer * ListContainer_intersection(json_t ** lists, int num_lists)
         }
         if (keep == 0)
         {
-            fuse_log("Keeping file %s\n", getJsonFileName(curr_file));
+            //fuse_log("Keeping file %s\n", getJsonFileName(curr_file));
             json_list_append(&container->intersection, curr_file);
         }
         else
         {
-            fuse_log("Discarding %s\n", getJsonFileName(curr_file));
+            //fuse_log("Discarding %s\n", getJsonFileName(curr_file));
         }
     }
 
@@ -112,20 +115,17 @@ ListContainer * ListContainer_intersection(json_t ** lists, int num_lists)
 
 
 //We get the ListContainer, and this function decides what to do 
-//atm, return the intersection of the lists
+//atm, return the intersection of the lists, but can be changed to do 
+//whatever
 json_t * list_handler(json_t ** lists, int num_lists) 
 {
-    // fuse_log("Dumping lists passed to list_handler:\n");
-    // for (int index = 0; index < num_lists; index++)
-    // {
-    //     dump_file_list(*(lists + index));
-    // }
-
     ListContainer * container = ListContainer_intersection(lists, num_lists);
     return container->intersection;
 }
 
-
+//For each executable, get a file list
+//Pass all these lists into list_handler, which returns us a single list
+//Assign this single list to be the filelist
 int listAsArrayV2(json_t **list, struct Drive_Object * drive, char *optional_path)
 {
     fuse_log("Now doing new listAsArray\n");
@@ -147,6 +147,7 @@ int listAsArrayV2(json_t **list, struct Drive_Object * drive, char *optional_pat
 		dump_file_list(*(FileLists + exec_index));
 	}
     //Get list to return
-    list_handler(FileLists, drive->num_execs);
+    *list = list_handler(FileLists, drive->num_execs);
+    return json_array_size(*list);
     
 }

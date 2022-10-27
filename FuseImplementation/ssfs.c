@@ -47,11 +47,11 @@ struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
 		{
 			"Google_Drive", 
 			NULL, 
-			-1, 
-			-1, 
-			-1, 
-			"../src/API/google_drive/google_drive_client",
-			"", 
+			//-1, 
+			//-1, 
+			//-1, 
+			//"../src/API/google_drive/google_drive_client",
+			//"", 
 			0, //Num Files
 			0, //Num Sub directories
 			2, //Num execs
@@ -63,11 +63,11 @@ struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
 			{-1, -1, -1, -1},   //pids
 			/*   Subdirectory List: NULL*/
 		},
-		{"NFS", NULL, -1, -1, -1, "../src/API/NFS/nfs_api", "", 0}
+		//{"NFS", NULL, -1, -1, -1, "../src/API/NFS/nfs_api", "", 0}
 
 		// {"Test_Dir", NULL, -1, "./getFile", 0, {}, 0}
 };
-struct Drive_Object CacheDrive = {"Ramdisk", NULL, -1, -1, -1, "../src/API/ramdisk/ramdisk_client", 0, /*{},*/ 0};
+//struct Drive_Object CacheDrive = {"Ramdisk", NULL, "../src/API/ramdisk/ramdisk_client", 0, /*{},*/ 0};
 const char *CacheFile = "/mnt/ramdisk/";
 
 /**********************************************************/
@@ -187,9 +187,14 @@ static int xmp_create(const char *path, mode_t mode,
 
 	char *remoteFilePath = parse_out_drive_name(pathBuffer);
 
-
-	dprintf(Drives[drive_index].in, "{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, filePath);
-	fuse_log_error("{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, filePath);
+	// TODO : this stuff should get handled by daemon
+	//dprintf(Drives[drive_index].in, "{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, filePath);
+	//fuse_log_error("{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, filePath);
+	for (int exec_index = 0; exec_index < Drives[drive_index].num_execs; exec_index++)
+	{
+		// For now tho, upload to all the drives, since that's cool :)
+		dprintf(Drives[drive_index].in_fds[exec_index], "{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, filePath);
+	}
 
 	// fi->fh = res;
 	return 0;
@@ -570,9 +575,10 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		if (access(cachePath, F_OK) == -1)
 				{
 		// do nothing - making sure file is found
- fuse_log("Before send command\n");
+ 		fuse_log("Before send command\n");
 		// Send download request to the proper api's stdin
-		dprintf(currDrive.in, "{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
+		// TODO - right now just asks first executable - should be updated to do most recent version of file?
+		dprintf(currDrive.in_fds[0], "{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
 		fuse_log_error("{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
 
 		// Should wait for output from the api, currently just blocks forever
@@ -580,7 +586,8 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		int count = 0;
 		while (1)
 		{
-			if (read(currDrive.out, buff, 4) > 0)
+			// TODO : see TODO above
+			if (read(currDrive.out_fds[0], buff, 4) > 0)
 			{
 
 				if (strncmp(buff, "{0}", 3) == 0)
@@ -676,7 +683,8 @@ static int do_write(const char *path, const char *buffer, size_t size, off_t off
 
 		// Ensuring we are selecting the proper drive to request the file from
 		fuse_log_error("The drive chosen is %s\n", currDrive.dirname);
-		if (!is_process_running(currDrive.pid))
+		//TODO: currently downloads from first executable in list. Should change to download most recent version of file?
+		if (!is_process_running(currDrive.pids[0]))
 		{
 			fuse_log_error("Drive api was closed\n");
 			free(pathBuffer);
@@ -686,7 +694,8 @@ static int do_write(const char *path, const char *buffer, size_t size, off_t off
 
 		// Send download request to the proper api's stdin
 		//{"command":"upload","path":"<valid_path>","files":["<filename1>", "<filename2>", ...]}
-		dprintf(currDrive.in, "{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, fullFileName);
+		
+		dprintf(currDrive.in_fds[0], "{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, fullFileName);
 		fuse_log_error("{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, fullFileName);
 	}
 	return i;

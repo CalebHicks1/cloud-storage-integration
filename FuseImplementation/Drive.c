@@ -185,12 +185,12 @@ int populate_filelists()
 	for (int i = 0; i < NUM_DRIVES; i++)
 	{
 		
-		int out = -1; // fd to read from executable
-		int in = -1;  // fd to write to executable
+		//int out = -1; // fd to read from executable
+		//int in = -1;  // fd to write to executable
 
 		// launch executable
-		fuse_log("running module at %s\n", Drives[i].exec_path);
-		spawn_module(&in, &out, &Drives[i].pid, Drives[i].exec_path, Drives[i].exec_arg);
+		//fuse_log("running module at %s\n", Drives[i].exec_path);
+		//spawn_module(&in, &out, &Drives[i].pid, Drives[i].exec_path, Drives[i].exec_arg);
 
 		for (int exec_index = 0; exec_index < Drives[i].num_execs; exec_index++)
 		{
@@ -199,8 +199,8 @@ int populate_filelists()
 				Drives[i].exec_paths[exec_index], Drives[i].exec_args[exec_index]);
 		}
 
-		Drives[i].in = in;
-		Drives[i].out = out;
+		//Drives[i].in = in;
+		//Drives[i].out = out;
 		list_init(&(Drives[i].subdirectories_list));
 		// Populate FileList
 		Drives[i].num_files = listAsArray(&(Drives[i].FileList), &Drives[i], NULL);
@@ -258,7 +258,8 @@ int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char *optional_
 /**
  * Uses API to get contents of a subdirectory, placing this contents in param list
  */
-int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in, int out)
+ //int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in, int out)
+int get_subdirectory_contents(json_t **list, int drive_index, char *path)
 {
 	fuse_log("Generating filelist for subdirectory %s\n", path);
 	return listAsArray(list, &Drives[drive_index], path);
@@ -342,7 +343,9 @@ SubDirectory *handle_subdirectory(char *path)
 	insert_subdirectory(drive_index, new);
 	//Insert files 
 	fuse_log("Getting files for new subdirectory structure: %s\n", path);
-	new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path, Drives[drive_index].in, Drives[drive_index].out);
+	//new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path, Drives[drive_index].in, Drives[drive_index].out);
+	//New version doesn't need fds
+	new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path);
 	
 	return new;
 }
@@ -361,29 +364,30 @@ SubDirectory *handle_subdirectory(char *path)
  */
 int listAsArray(json_t **list, struct Drive_Object * drive, char *optional_path)
 {
-	char execOutput[100][LINE_MAX_BUFFER_SIZE] = {};
+	return listAsArrayV2(list, drive, optional_path);
+	// char execOutput[100][LINE_MAX_BUFFER_SIZE] = {};
 
-	int a = myGetFileList(execOutput, drive->exec_path, optional_path, drive->in, drive->out);
-	fuse_log("First a: %d\n", a);
-	json_t *fileListAsArray = NULL;
+	// int a = myGetFileList(execOutput, drive->exec_path, optional_path, drive->in, drive->out);
+	// fuse_log("First a: %d\n", a);
+	// json_t *fileListAsArray = NULL;
 
-	if (a < 1)
-	{
-		printf("file list getter was not executed properly or output was empty\n");
-		return 0;
-	}
+	// if (a < 1)
+	// {
+	// 	printf("file list getter was not executed properly or output was empty\n");
+	// 	return 0;
+	// }
 
-	int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
+	// int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
 
-	if (arraySize < 1)
-	{
-		return 0;
-	}
-	*list = fileListAsArray;
-	//--------------------------
-	fuse_log("Now calling listAsArrayV2");
-	listAsArrayV2(list, drive, optional_path);
-	return arraySize;
+	// if (arraySize < 1)
+	// {
+	// 	return 0;
+	// }
+	// *list = fileListAsArray;
+	// //--------------------------
+	// fuse_log("Now calling listAsArrayV2");
+	
+	// return arraySize;
 }
 
 /*****************************************************************************/
@@ -469,7 +473,11 @@ int kill_all_processes()
 {
 	for (int i = 0; i < NUM_DRIVES; i++)
 	{
-		shutdown(Drives[i].pid, Drives[i].in, Drives[i].out);
+		//shutdown(Drives[i].pid, Drives[i].in, Drives[i].out);
+		for (int exec_index = 0; exec_index < Drives[i].num_execs; exec_index++)
+		{
+			shutdown(Drives[i].pids[exec_index], Drives[i].in_fds[exec_index], Drives[i].out_fds[exec_index]);
+		}
 	}
 	return 0;
 }
