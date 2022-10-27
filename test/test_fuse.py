@@ -64,7 +64,10 @@ def change_dir(path):
   
 # given a command, run it and return the output
 def output(command):
-    output = subprocess.check_output(command, shell=True).decode('utf-8')
+    try:
+        output = subprocess.check_output(command, shell=True).decode('utf-8')
+    except Exception as e:
+        output = e
     return output
 
 # given actual and expected strings, compare. If not equal, print message
