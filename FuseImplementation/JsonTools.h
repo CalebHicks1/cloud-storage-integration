@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 
 int json_list_append(json_t ** filelist, json_t * new_file);
+int json_list_remove(json_t ** filelist, json_t * file, int num_files);
 const char* getJsonFileName(json_t* file);
 
 int parseJsonString(json_t** fileListAsArray, char stringArray[][1024], int numberOfLines);

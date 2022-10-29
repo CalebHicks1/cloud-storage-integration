@@ -3,9 +3,27 @@
 #include "subdirectories/SubDirectory.h"
 //#include "ssfs.h"
 #include "api.h"
+#include "MultiList.h"
 extern Drive_Object Drives[NUM_DRIVES];
 
 #define BASH
+
+void dump_file_descriptors(Drive_Object * drive)
+{
+	printf("| in: {");
+	for (int i = 0; i < MAX_EXECS; i++)
+	{
+		printf("%d, ", drive->in_fds[i]);
+	}
+	printf("}\n");
+	
+	printf("| out: {");
+	for (int i = 0; i < MAX_EXECS; i++)
+	{
+		printf("%d, ", drive->out_fds[i]);
+	}
+	printf("}\n");
+}
 
 void dump_drive(Drive_Object * drive)
 {
@@ -15,6 +33,7 @@ void dump_drive(Drive_Object * drive)
 	}
 	//This Drives attributes
 	printf("| %s (%d files)\n", &(drive->dirname[0]), drive->num_files);
+	dump_file_descriptors(drive);
 	//Files
 	for (int i = 0; i < drive->num_files; i++) {
 		json_t * curr_file = json_array_get(drive->FileList, i);
@@ -29,6 +48,66 @@ void dump_drive(Drive_Object * drive)
 		dump_subdirectory(currSubdir, 0);
 	}
 	
+}
+
+//Path is the absolute path
+int Drive_delete(char * path)
+{
+	int drive_index = get_drive_index(path);
+	if (drive_index < 0)
+	{
+		fuse_log_error("Could not find drive for %s\n", path);
+	}
+	json_t * file = get_file(drive_index, path);
+	if (file == NULL)
+	{
+		fuse_log_error("Could not find file %s\n", path);
+		return -1;
+	}
+	
+	Get_Result * result = get_subdirectory(drive_index, path);
+	if (result->type == ROOT)
+	{
+		fuse_log("Determined to be in root directory\n");
+		int file_index = get_file_index(path, drive_index);
+		int ret = json_list_remove(&Drives[drive_index].FileList, file, Drives[drive_index].num_files);
+		if (ret >= 0)
+		{
+			//Success
+			Drives[drive_index].num_files--;
+			return 0;
+		}
+		else
+		{
+			fuse_log_error("Deleting file %s failed\n", path);
+			return -1;
+		}
+		
+	}
+	//File is in a subdirectory...
+	
+	if (result->type == ELEMENT && result->subdirectory != NULL)
+	{
+		fuse_log("Determined to be in a subdirectory\n");
+		//This is the only case we support - removing directories will be another function
+		int ret = json_list_remove(&result->subdirectory->FileList, file, result->subdirectory->num_files);
+		if (ret >= 0)
+		{
+			//Success
+			result->subdirectory->num_files--;
+			return 0;
+		}
+		else
+		{
+			fuse_log_error("Failed to remove file %s from subdirectory\n", path);
+			return -1;
+		}
+	}
+	else
+	{
+		fuse_log_error("Unexpected error\n");
+		return -1;
+	}
 }
 
 /**
@@ -105,24 +184,35 @@ int populate_filelists()
 	int res = 0;
 	for (int i = 0; i < NUM_DRIVES; i++)
 	{
-		int out = -1; // fd to read from executable
-		int in = -1;  // fd to write to executable
+		
+		//int out = -1; // fd to read from executable
+		//int in = -1;  // fd to write to executable
 
 		// launch executable
-		fuse_log("running module at %s\n", Drives[i].exec_path);
-		spawn_module(&in, &out, &Drives[i].pid, Drives[i].exec_path);
+		//fuse_log("running module at %s\n", Drives[i].exec_path);
+		//spawn_module(&in, &out, &Drives[i].pid, Drives[i].exec_path, Drives[i].exec_arg);
 
-		Drives[i].in = in;
-		Drives[i].out = out;
+		for (int exec_index = 0; exec_index < Drives[i].num_execs; exec_index++)
+		{
+			fuse_log("New version: spawning executable #%d for drive %s", exec_index, Drives[i].dirname);
+			spawn_module(&Drives[i].in_fds[exec_index], &Drives[i].out_fds[exec_index], &Drives[i].pids[exec_index],
+				Drives[i].exec_paths[exec_index], Drives[i].exec_args[exec_index]);
+		}
+
+		//Drives[i].in = in;
+		//Drives[i].out = out;
 		list_init(&(Drives[i].subdirectories_list));
 		// Populate FileList
-		Drives[i].num_files = listAsArray(&(Drives[i].FileList), Drives[i].exec_path, NULL, Drives[i].in, Drives[i].out);
+		Drives[i].num_files = listAsArray(&(Drives[i].FileList), &Drives[i], NULL);
 		if (Drives[i].num_files < 0)
 		{
 			fuse_log_error("Populating %s failed\n", Drives[i].dirname);
 			res = -1;
 		}
+
+		dump_drive(&Drives[i]);
 	}
+	//int ret = Drive_delete("/Google_Drive/whatever");
 	return res;
 }
 
@@ -168,10 +258,11 @@ int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char *optional_
 /**
  * Uses API to get contents of a subdirectory, placing this contents in param list
  */
-int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in, int out)
+ //int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in, int out)
+int get_subdirectory_contents(json_t **list, int drive_index, char *path)
 {
 	fuse_log("Generating filelist for subdirectory %s\n", path);
-	return listAsArray(list, Drives[drive_index].exec_path, path, in, out);
+	return listAsArray(list, &Drives[drive_index], path);
 }
 
 
@@ -252,7 +343,9 @@ SubDirectory *handle_subdirectory(char *path)
 	insert_subdirectory(drive_index, new);
 	//Insert files 
 	fuse_log("Getting files for new subdirectory structure: %s\n", path);
-	new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path, Drives[drive_index].in, Drives[drive_index].out);
+	//new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path, Drives[drive_index].in, Drives[drive_index].out);
+	//New version doesn't need fds
+	new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path);
 	
 	return new;
 }
@@ -269,28 +362,32 @@ SubDirectory *handle_subdirectory(char *path)
  * optional_path: if not NULL, corresponds to the subdirectory in which we want to
  * list the files - if NULL, list at root level of the drive
  */
-int listAsArray(json_t **list, char *cmd, char *optional_path, int in, int out)
+int listAsArray(json_t **list, struct Drive_Object * drive, char *optional_path)
 {
-	char execOutput[100][LINE_MAX_BUFFER_SIZE] = {};
+	return listAsArrayV2(list, drive, optional_path);
+	// char execOutput[100][LINE_MAX_BUFFER_SIZE] = {};
 
-	int a = myGetFileList(execOutput, cmd, optional_path, in, out);
+	// int a = myGetFileList(execOutput, drive->exec_path, optional_path, drive->in, drive->out);
+	// fuse_log("First a: %d\n", a);
+	// json_t *fileListAsArray = NULL;
 
-	json_t *fileListAsArray = NULL;
+	// if (a < 1)
+	// {
+	// 	printf("file list getter was not executed properly or output was empty\n");
+	// 	return 0;
+	// }
 
-	if (a < 1)
-	{
-		printf("file list getter was not executed properly or output was empty\n");
-		return 0;
-	}
+	// int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
 
-	int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
-
-	if (arraySize < 1)
-	{
-		return 0;
-	}
-	*list = fileListAsArray;
-	return arraySize;
+	// if (arraySize < 1)
+	// {
+	// 	return 0;
+	// }
+	// *list = fileListAsArray;
+	// //--------------------------
+	// fuse_log("Now calling listAsArrayV2");
+	
+	// return arraySize;
 }
 
 /*****************************************************************************/
@@ -376,7 +473,11 @@ int kill_all_processes()
 {
 	for (int i = 0; i < NUM_DRIVES; i++)
 	{
-		shutdown(Drives[i].pid, Drives[i].in, Drives[i].out);
+		//shutdown(Drives[i].pid, Drives[i].in, Drives[i].out);
+		for (int exec_index = 0; exec_index < Drives[i].num_execs; exec_index++)
+		{
+			shutdown(Drives[i].pids[exec_index], Drives[i].in_fds[exec_index], Drives[i].out_fds[exec_index]);
+		}
 	}
 	return 0;
 }
