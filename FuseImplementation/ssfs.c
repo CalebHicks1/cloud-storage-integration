@@ -331,10 +331,45 @@ static int xmp_release(const char *path, struct fuse_file_info *fi)
 	return 0;
 }
 
+static int xmp_rename(const char *from, const char *to /*, unsigned int flags */)
+{
+	int res = 0;
+	fuse_log("from: %s, to: %s\n", from, to);
+	int drive_index = get_drive_index(from);
+	if (drive_index < 0)
+	{
+		fuse_log_error("Could not find Drive for source file %s\n", from);
+		return -1;
+	}
+	json_t * file = get_file(drive_index, (char*) from);
+	if (file == NULL)
+	{
+		fuse_log_error("Could not find the source file %s\n", from);
+		return -1;
+	}
+	char * prefix;
+	char * local;
+	char * filename = strdup(to);
+	split_path_file(&prefix, &local, filename);
+	fuse_log("local: %s\n", local);
+	if (Drive_insert(drive_index, (char*) to, create_new_file(local, false)) < 0)
+	{
+		fuse_log_error("Could not insert new file\n");
+		res = -1;
+	}
+	if (Drive_delete((char*) from) < 0)
+	{
+		fuse_log_error("Could not delete old file\n");
+		res = -1;
+	}
+	return res;
+}
+
 static struct fuse_operations operations = {
 	.getattr = do_getattr,
 	.readdir = do_readdir,
 	.read = do_read,
+	.rename	= xmp_rename,
 #ifdef HAVE_UTIMENSAT
 	.utimens = xmp_utimens,
 #endif

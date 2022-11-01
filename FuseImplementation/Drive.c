@@ -62,6 +62,7 @@ int Drive_delete(char * path)
 	if (file == NULL)
 	{
 		fuse_log_error("Could not find file %s\n", path);
+		fuse_log_error("Above error message is OK if called by Drive_insert\n");
 		return -1;
 	}
 	
@@ -116,7 +117,17 @@ int Drive_delete(char * path)
  */
 int Drive_insert(int drive_index, char * path, json_t * file)
 {
-	fuse_log("Inserting %s\n", getJsonFileName(file));
+	//If we rename a file to an already existing one
+	//we need to delete the old one
+	fuse_log("Try deleting path to see if it already exists...");
+	fuse_log("(it's ok if this causes an error\n");
+	int did_delete = Drive_delete(path);
+	if (did_delete == 0)
+	{
+		fuse_log("Deleted the original\n");
+	}
+
+
 	Get_Result * get_result = get_subdirectory(drive_index, (char*) path);
 	if (get_result->type == ROOT)
 	{
