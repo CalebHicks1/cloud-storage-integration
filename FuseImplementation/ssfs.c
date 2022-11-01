@@ -39,7 +39,7 @@ static int xmp_create(const char *path, mode_t mode,
 static int do_write(const char *path, const char *buffer, size_t size, off_t offset, struct fuse_file_info *fi);
 static int xmp_write(const char *path, const char *buf, size_t size,
 					 off_t offset, struct fuse_file_info *fi);
-static int download_file(int fd, char *downloadFile, char *filename, char *cachePath);
+static int download_file(int fdin, int fdout, char *downloadFile, char *filename, char *cachePath);
 
 /*Global varibales and structs ***********************************/
 
@@ -326,8 +326,15 @@ static int xmp_truncate(const char *path, off_t size)
 		fuse_log_error("getcwd() error");
 		return -1;
 	}
+	char cwd1[512];
+	if (getcwd(cwd1, sizeof(cwd1)) == NULL)
+	{
+		fuse_log_error("getcwd() error");
+		return -1;
+	}
 
 	char *writeFilePathLocal = strcat(cwd, CacheFile);
+	char *cachePath = strcat(cwd1, CacheFile);
 
 	char *pathcpy = strdup(path);
 	char *pathBuffer;
@@ -336,6 +343,19 @@ static int xmp_truncate(const char *path, off_t size)
 
 	char *fullFileName = strcat(writeFilePathLocal, filename);
 	int res;
+
+
+
+	if (access(fullFileName ,F_OK) == -1)
+		{
+				int index = get_drive_index(pathBuffer);
+				if ( index > -1){
+		download_file(Drives[index].in_fds[0], Drives[index].out_fds[0], cachePath, filename, fullFileName);
+				}
+				fuse_log("Drive index %d", index);
+			
+		}
+
 
 	res = truncate(fullFileName, size);
 	if (res == -1)
@@ -364,13 +384,12 @@ static int xmp_rename(const char *from, const char *to /*, unsigned int flags */
 	char *tolocal;
 	char *toFilename = strdup(to);
 	split_path_file(&toprefix, &tolocal, toFilename);
-	fuse_log("pref - %s, local - %s \n", toprefix, tolocal);
+
 	char *fromprefix;
 	char *fromlocal;
 	char *fromFilename = strdup(from);
 	split_path_file(&fromprefix, &fromlocal, fromFilename);
 
-	fuse_log("pref - %s, local - %s \n", fromprefix, fromlocal);
 
 	char cwd1[512];
 	getcwd(cwd1, sizeof(cwd1));
@@ -391,16 +410,25 @@ static int xmp_rename(const char *from, const char *to /*, unsigned int flags */
 
 	if (access(from_cache_path, F_OK) == -1)
 		{
-		download_file(Drives[from_drive_index].in_fds[0], cachePath2, fromlocal, from_cache_path);
+		download_file(Drives[from_drive_index].in_fds[0],Drives[from_drive_index].out_fds[0], cachePath2, fromlocal, from_cache_path);
 			
 		}
 
+	struct stat st;
+	int size = 0;
+	if (stat(from_cache_path, &st) == 0)
+	{
+		size = st.st_size;
+	}
 	// reflect changes in cache
 	res = rename(from_cache_path, to_cache_path);
 	fuse_log("renamed - from %s to %s \n", from_cache_path, to_cache_path);
 
-	// fuse_log("local: %s\n", local);
-	if (Drive_insert(to_drive_index, (char *)tolocal, create_new_file(tolocal, false, 0)) < 0)
+
+
+
+	 fuse_log("size: %d\n", size);
+	if (Drive_insert(to_drive_index, (char *)tolocal, create_new_file(tolocal, false, size)) < 0)
 	{
 		fuse_log_error("Could not insert new file\n");
 		res = -1;
@@ -707,36 +735,41 @@ static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 	return res;
 }
 
-static int download_file(int fd, char *downloadFile, char *filename, char *cachePath)
+static int download_file(int fdin, int fdout, char *downloadFile, char *filename, char *cachePath)
 {
-	dprintf(fd, "{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
+	dprintf(fdin, "{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
 	fuse_log("{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
 	// Should wait for output from the api, currently just blocks forever
 	char buff[11];
-
+	int i = 1;
 	while (1)
-	{
+	/*{
+		i++;
+		if (access(cachePath, F_OK) != -1){
+			return 1;
+		}
+	}*/
 		// TODO : see TODO above
-		if (read(fd, buff, 11) > 0)
+		if (read(fdout, buff, 10) > 0)
 		{
 
-			/*if (strncmp(buff, "{\"code\":0,\"message\":\"No Error\"}", 10) == 0)
+			if (strncmp(buff, "{\"code\":0,\"message\":\"No Error\"}", 8) == 0)
 			{
-*/
+
 				fuse_log_error("Successfully downloaded %s\n", buff);
 				return 1;
-/*
+
 				return 1;
 			}
-			else if (strncmp(buff, "{\"code\":0,\"message\":\"No Error\"}", 8) == 0)
+			else if (strncmp(buff, "{\"code\":0,\"message\":\"No Error\"}", 1) == 0)
 			{
 				fuse_log_error("Unsuccessfully downloaded %s\n", buff);
 				return -1;
-			}*/
+			}
+		
 		}
-	}
 
-	return 0;
+	return -1;
 }
 
 static int do_read(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi)
@@ -781,7 +814,7 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		// fuse_log("After cachePath - %s\n", cachePath);
 		if (access(cachePath, F_OK) == -1)
 		{
-			if (download_file(currDrive.in_fds[0], downloadFile, filename, cachePath) > 0)
+			if (download_file(currDrive.in_fds[0],currDrive.out_fds[0], downloadFile, filename, cachePath) > 0)
 			{
 				return xmp_read(cachePath, buffer, size, offset, fi);
 			}
@@ -821,8 +854,15 @@ static int do_write(const char *path, const char *buffer, size_t size, off_t off
 		return -1;
 	}
 
+char cwd1[512];
+	if (getcwd(cwd1, sizeof(cwd1)) == NULL)
+	{
+		fuse_log_error("getcwd() error");
+		return -1;
+	}
 	char *writeFilePathLocal = strcat(cwd, CacheFile);
 
+char *cachePath = strcat(cwd1, CacheFile);
 	char *pathcpy = strdup(path);
 	char *pathBuffer;
 	char *filename;
@@ -830,8 +870,8 @@ static int do_write(const char *path, const char *buffer, size_t size, off_t off
 
 	char *fullFileName = strcat(writeFilePathLocal, filename);
 
-	int i = xmp_write(fullFileName, buffer, size, offset, fi);
 
+int i = -1;
 	if (is_drive(pathBuffer) == 0)
 	{ // File is requested straight from drive
 
@@ -843,6 +883,17 @@ static int do_write(const char *path, const char *buffer, size_t size, off_t off
 			free(filename);
 			return -1;
 		}
+
+			if (access(fullFileName ,F_OK) == -1)
+		{
+
+		download_file(Drives[index].in_fds[0], Drives[index].out_fds[0],cachePath, filename, fullFileName);
+			
+		}
+
+
+	i = xmp_write(fullFileName, buffer, size, offset, fi);
+
 		///	Drive_Object currDrive = Drives[index];
 
 		int file_index = get_file_index(path, index);
