@@ -126,7 +126,7 @@ static int xmp_mkdir(const char *path, mode_t mode)
 		return -1;
 	}
 
-	SubDirectory *newSub = SubDirectory_create(path);
+	SubDirectory *newSub = SubDirectory_create((char*) path);
 	// newSub->rel_dirname = path;
 	insert_subdirectory(drive_index, newSub);
 
@@ -217,7 +217,7 @@ static int xmp_unlink(const char *path)
 	fputs("\n", fPtr);
 
 	fclose(fPtr);
-	Drive_delete(path);
+	Drive_delete((char*) path);
 	return 0;
 } 
 
@@ -401,7 +401,6 @@ static int do_getattr(const char *path, struct stat *st)
 
 	if (is_drive(path) == 0)
 	{
-		fuse_log("Drive found\n");
 		st->st_mode = S_IFDIR | 0755;
 		st->st_nlink = 2; // Why "two" hardlinks instead of "one"? The answer is here: http://unix.stackexchange.com/a/101536
 		return 0;
@@ -409,7 +408,6 @@ static int do_getattr(const char *path, struct stat *st)
 	int drive = get_drive_index(path);
 	if (drive > -1)
 	{
-		fuse_log("\tElement in drive\n");
 		int index = get_file_index(path, drive);
 		//-------------------	Request file from drive
 		json_t *file = get_file(drive, (char *)path);

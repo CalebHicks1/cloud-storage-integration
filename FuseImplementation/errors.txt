@@ -1,10 +1,1 @@
-Generated at: 2022-10-27 09:39:57
----------> [handle_subdirectory] Called for /Google_Drive/myFolder
----------> [get_subdirectory] Failed....
----------> [handle_subdirectory] was null
----------> [handle_subdirectory] type: 2
----------> [get_subdirectory] Failed....
----------> [handle_subdirectory] Called for /Google_Drive/myFolder/subfolder
----------> [handle_subdirectory] wasnt null
----------> [handle_subdirectory] was element
----------> [Subdirectory_find_file] searching here
+Generated at: 2022-10-31 21:56:10
