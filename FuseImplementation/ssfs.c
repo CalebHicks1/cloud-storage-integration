@@ -45,40 +45,40 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
 	{
 		{
-			"Google_Drive", 
-			NULL, 
-			//-1, 
-			//-1, 
-			//-1, 
+			"Google_Drive",
+			NULL,
+			//-1,
+			//-1,
+			//-1,
 			//"../src/API/google_drive/google_drive_client",
-			//"", 
-			0, //Num Files
-			0, //Num Sub directories
-			1, //Num execs
-			{"../src/API/google_drive/google_drive_client", "../src/API/google_drive/google_drive_client", "", ""},	//execs
-			{"", "-token_file=secondary.json", "", ""},	//args
-			{-1, -1, -1, -1},	//in_fds
-			{-1, -1, -1, -1},	//out_fds
-			{-1, -1, -1, -1},   //pids
+			//"",
+			0,																										// Num Files
+			0,																										// Num Sub directories
+			1,																										// Num execs
+			{"../src/API/google_drive/google_drive_client", "../src/API/google_drive/google_drive_client", "", ""}, // execs
+			{"", "-token_file=secondary.json", "", ""},																// args
+			{-1, -1, -1, -1},																						// in_fds
+			{-1, -1, -1, -1},																						// out_fds
+			{-1, -1, -1, -1},																						// pids
 			/*   Subdirectory List: NULL*/
 		},
 		//{"NFS", NULL, -1, -1, -1, "../src/API/NFS/nfs_api", "", 0}
 
 		// {"Test_Dir", NULL, -1, "./getFile", 0, {}, 0}
 };
-//struct Drive_Object CacheDrive = {"Ramdisk", NULL, "../src/API/ramdisk/ramdisk_client", 0, /*{},*/ 0};
+// struct Drive_Object CacheDrive = {"Ramdisk", NULL, "../src/API/ramdisk/ramdisk_client", 0, /*{},*/ 0};
 const char *CacheFile = "/mnt/ramdisk/";
 
 /**********************************************************/
 
 /*Main function and Drive functions ***********************/
 
-json_t *create_new_file(const char *path, bool isDir)
+json_t *create_new_file(const char *path, bool isDir, int size)
 {
-	fuse_log("Creating new file %s\n", path);
+
 	json_t *new_file = json_object();
 	json_object_set(new_file, "Name", json_string(path));
-	json_object_set(new_file, "Size", json_integer(0));
+	json_object_set(new_file, "Size", json_integer(size));
 	json_object_set(new_file, "IsDir", json_boolean(isDir));
 	return new_file;
 }
@@ -116,22 +116,21 @@ static int xmp_mkdir(const char *path, mode_t mode)
 
 	char *cachePath = strcat(cwd, CacheFile);
 	char *localPath = strcat(cachePath, newDirName);
-	fuse_log("New folder path  : %s", localPath);
+
 
 	// trigger new directory in drive
 	res = mkdir(localPath, mode);
 
 	if (access(localPath, F_OK) == -1)
 	{
-		return -1;
+		return res;
 	}
 
 	SubDirectory *newSub = SubDirectory_create((char*) path);
 	// newSub->rel_dirname = path;
 	insert_subdirectory(drive_index, newSub);
 
-	json_t *new_file = create_new_file(newDirName, true);
-	
+	json_t *new_file = create_new_file(newDirName, true, 0);
 
 	int err = json_array_insert(Drives[drive_index].FileList, 0, new_file);
 	if (err != 0)
@@ -143,24 +142,26 @@ static int xmp_mkdir(const char *path, mode_t mode)
 
 	return 0;
 }
+
+
+/** remove subdirectory from tree*/
 static int xmp_rmdir(const char *path)
 {
 	fuse_log("rmdir");
-	int res;
+	
 	char *pathcpy = strdup(path);
 	char *pathBuffer;
 	char *newDirName;
 
 	split_path_file(&pathBuffer, &newDirName, pathcpy);
-	int drive_index = get_drive_index(pathBuffer);
+	//int drive_index = get_drive_index(pathBuffer);
 	char cwd[512];
 	getcwd(cwd, sizeof(cwd));
 
 	char *cachePath = strcat(cwd, CacheFile);
 	char *localPath = strcat(cachePath, newDirName);
-	fuse_log("New folder path  : %s", localPath);
-
-	res = rmdir(localPath);
+	
+	int res = rmdir(localPath);
 
 	getcwd(cwd, sizeof(cwd));
 	char *cachePath2 = strcat(cwd, CacheFile);
@@ -176,10 +177,8 @@ static int xmp_rmdir(const char *path)
 	fputs("\n", fPtr);
 
 	fclose(fPtr);
-
-	return 0;
+	return res;
 }
-
 
 static int xmp_unlink(const char *path)
 
@@ -217,10 +216,9 @@ static int xmp_unlink(const char *path)
 	fputs("\n", fPtr);
 
 	fclose(fPtr);
-	Drive_delete((char*) path);
-	return 0;
-} 
-
+	Drive_delete( (char*) path);
+	return res ;
+}
 
 // This handles adding new files
 // If you "touch test.txt", it should go:
@@ -238,7 +236,7 @@ static int xmp_create(const char *path, mode_t mode,
 	char *filename;
 	split_path_file(&pathBuffer, &filename, pathcpy);
 
-	json_t *new_file = create_new_file(filename, false);
+	json_t *new_file = create_new_file(filename, false, 0);
 	int drive_index = get_drive_index(path);
 	if (drive_index < 0)
 	{
@@ -261,7 +259,7 @@ static int xmp_create(const char *path, mode_t mode,
 	}
 	else
 	{
-		perror("getcwd() error");
+		fuse_log_error("getcwd() error");
 		return -1;
 	}
 
@@ -270,22 +268,11 @@ static int xmp_create(const char *path, mode_t mode,
 	FILE *file = fopen(filePath, "a");
 
 	// res = open(writeFilePathLocal, fi->flags, mode);
-	if (file == NULL)
-	{
-		fuse_log_error("Insert failed\n");
-		return -errno;
-	}
+	
+	fclose(file);
 
-	//	char *remoteFilePath = parse_out_drive_name(pathBuffer);
-
-	/*
-		dprintf(Drives[drive_index].in, "{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, filePath);
-		fuse_log_error("{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, filePath);
-	*/
-	// fi->fh = res;
 	return 0;
 }
-
 
 static int xmp_open(const char *path, struct fuse_file_info *fi)
 {
@@ -298,19 +285,19 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 	fi->fh = res;
 	return 0;
 }
-
+/*
 static int xmp_mknod(const char *path, mode_t mode, dev_t rdev)
 {
 	int res;
 	printf("mknod\n");
 
-	// res = mknod_wrapper(AT_FDCWD, path, NULL, mode, rdev);
+	 res = mknod_wrapper(AT_FDCWD, path, NULL, mode, rdev);
 	if (res == -1)
 		return -errno;
 
 	return 0;
-}
-
+}*/
+/*
 static int xmp_access(const char *path, int mask)
 {
 	printf("xmp_access\n");
@@ -322,7 +309,7 @@ static int xmp_access(const char *path, int mask)
 
 	return 0;
 }
-
+*/
 static int xmp_release(const char *path, struct fuse_file_info *fi)
 {
 	printf("release\n");
@@ -331,6 +318,34 @@ static int xmp_release(const char *path, struct fuse_file_info *fi)
 	return 0;
 }
 
+static int xmp_truncate(const char *path, off_t size)
+{
+	fuse_log("Truncate called\n");
+	char cwd[512];
+	if (getcwd(cwd, sizeof(cwd)) == NULL)
+	{
+		fuse_log_error("getcwd() error");
+		return -1;
+	}
+
+	char *writeFilePathLocal = strcat(cwd, CacheFile);
+
+	char *pathcpy = strdup(path);
+	char *pathBuffer;
+	char *filename;
+	split_path_file(&pathBuffer, &filename, pathcpy);
+
+
+	char *fullFileName = strcat(writeFilePathLocal, filename);
+	int res;
+
+	
+		res = truncate(fullFileName, size);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
 static int xmp_rename(const char *from, const char *to /*, unsigned int flags */)
 {
 	int res = 0;
@@ -351,8 +366,8 @@ static int xmp_rename(const char *from, const char *to /*, unsigned int flags */
 	char * local;
 	char * filename = strdup(to);
 	split_path_file(&prefix, &local, filename);
-	fuse_log("local: %s\n", local);
-	if (Drive_insert(drive_index, (char*) to, create_new_file(local, false)) < 0)
+	//fuse_log("local: %s\n", local);
+	if (Drive_insert(drive_index, (char*) to, create_new_file(local, false, 0)) < 0)
 	{
 		fuse_log_error("Could not insert new file\n");
 		res = -1;
@@ -370,9 +385,11 @@ static struct fuse_operations operations = {
 	.readdir = do_readdir,
 	.read = do_read,
 	.rename	= xmp_rename,
+	.truncate = xmp_truncate,
 #ifdef HAVE_UTIMENSAT
 	.utimens = xmp_utimens,
 #endif
+
 	.mkdir = xmp_mkdir,
 	.rmdir = xmp_rmdir,
 	.unlink = xmp_unlink,
@@ -394,8 +411,8 @@ int main(int argc, char *argv[])
 	initialize_log();
 	// start Cache -move this to start process function in api
 
-	int out; // fd to read from executable
-	int in;	 // fd to write to executable
+	//int out; // fd to read from executable
+	//int in;	 // fd to write to executable
 
 	//
 	/*fuse_log("running module at %s\n", CacheDrive.exec_path);
@@ -436,6 +453,7 @@ static int do_getattr(const char *path, struct stat *st)
 
 	if (is_drive(path) == 0)
 	{
+		
 		st->st_mode = S_IFDIR | 0755;
 		st->st_nlink = 2; // Why "two" hardlinks instead of "one"? The answer is here: http://unix.stackexchange.com/a/101536
 		return 0;
@@ -443,7 +461,8 @@ static int do_getattr(const char *path, struct stat *st)
 	int drive = get_drive_index(path);
 	if (drive > -1)
 	{
-		int index = get_file_index(path, drive);
+	
+		//int index = get_file_index(path, drive);
 		//-------------------	Request file from drive
 		json_t *file = get_file(drive, (char *)path);
 
@@ -474,6 +493,7 @@ static int do_getattr(const char *path, struct stat *st)
 		st->st_nlink = 1;
 
 		json_t *size = json_object_get(file, "Size");
+		
 		if (size != NULL)
 			st->st_size = (int)json_integer_value(size);
 		else
@@ -564,8 +584,7 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 		SubDirectory *dir = handle_subdirectory((char *)path);
 		if (dir != NULL)
 		{
-			fuse_log("Directory returned: %s\n", dir->dirname);
-			fuse_log("Dir needed: %s\n", path);
+			
 			if (strcmp(dir->dirname, path) != 0)
 			{
 				fuse_log_error("fatal\n");
@@ -594,26 +613,31 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 	return 0;
 }
 
+
+
+
 /**
  * From https://stackoverflow.com/a/1575314
  *
  **/
 static void split_path_file(char **pathBuffer, char **filenameBuffer, char *localFile)
 {
-	char* ts1 = strdup(localFile);
-char* ts2 = strdup(localFile);
-	
-char* tempdir = dirname(ts1);
-*pathBuffer = calloc(strlen(tempdir)+1, sizeof(char));
-strncpy(*pathBuffer, tempdir, strlen(tempdir));
+	char *ts1 = strdup(localFile);
+	char *ts2 = strdup(localFile);
 
-char* tempname = basename(ts2);
-*filenameBuffer= calloc(strlen(tempname)+1, sizeof(char));
-strncpy(*filenameBuffer, tempname, strlen(tempname));
+	char *tempdir = dirname(ts1);
+	*pathBuffer = calloc(strlen(tempdir) + 1, sizeof(char));
+	strncpy(*pathBuffer, tempdir, strlen(tempdir));
 
-free(ts1);
-free(ts2);
+	char *tempname = basename(ts2);
+	*filenameBuffer = calloc(strlen(tempname) + 1, sizeof(char));
+	strncpy(*filenameBuffer, tempname, strlen(tempname));
+
+	free(ts1);
+	free(ts2);
 }
+
+
 
 /**
  * Fuse "passthrough" - completes a read function
@@ -624,6 +648,7 @@ static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 	int fd;
 	int res;
 
+	
 	fd = open(path, O_RDONLY);
 	fuse_log_error("Open");
 
@@ -633,22 +658,19 @@ static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 		return -1;
 	}
 
-fuse_log("offset - %d \n",offset);
 	res = pread(fd, buf, size, offset);
-	//res = read(fd, buf, size);
 	
 	if (res == -1)
 		fuse_log_error("pread fail\n");
 
-	//if (fi == NULL)
-		close(fd);
+	close(fd);
 	return res;
 }
 
 static int do_read(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi)
 {
-	fuse_log("--> Trying to read %s, %lu, %lu\n", path, offset, size);
-	
+	fuse_log("--> Trying to read %s, %lu, %lu, %d\n", path, offset, size, buffer);
+
 	char cwd[512];
 	if (getcwd(cwd, sizeof(cwd)) != NULL)
 	{
@@ -663,12 +685,11 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 	char *downloadFile = strcat(cwd, CacheFile);
 
 	char *pathcpy = strdup(path);
-	char *pathBuffer ;
-	char *filename ;
+	char *pathBuffer;
+	char *filename;
 
 	split_path_file(&pathBuffer, &filename, pathcpy);
 
-	// char* downloadFolder= strcat(downloadFile,filename);
 
 	if (is_drive(pathBuffer) == 0)
 	{ // File is requested straight from drive
@@ -683,41 +704,28 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		}
 		Drive_Object currDrive = Drives[index];
 
-		// Ensuring we are selecting the proper drive to request the file from
-		fuse_log_error("The drive chosen is %s\n", currDrive.dirname);
-	/*	if (!is_process_running(currDrive.pid))
-		{
-			fuse_log_error("Drive api was closed\n");
-			free(pathBuffer);
-			free(filename);
-			return -1;
-		}*/
-		//fuse_log("Before cachePath - %s\n", downloadFile);
+	
 
-		char *downloadFile2 =  calloc (strlen(downloadFile)+strlen(filename)+1, sizeof(char));
+		char *downloadFile2 = calloc(strlen(downloadFile) + strlen(filename) + 1, sizeof(char));
 		memcpy(downloadFile2, downloadFile, strlen(downloadFile));
 		char *cachePath = strcat(downloadFile2, filename);
-		//fuse_log("After cachePath - %s\n", cachePath);
+		// fuse_log("After cachePath - %s\n", cachePath);
 		if (access(cachePath, F_OK) == -1)
-				{
-		// do nothing - making sure file is found
- 		fuse_log("Before send command\n");
-		// Send download request to the proper api's stdin
-		// TODO - right now just asks first executable - should be updated to do most recent version of file?
-		dprintf(currDrive.in_fds[0], "{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
-		fuse_log_error("{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
-
-		// Should wait for output from the api, currently just blocks forever
-		char buff[4];
-		int count = 0;
-		while (1)
 		{
-			// TODO : see TODO above
-			if (read(currDrive.out_fds[0], buff, 4) > 0)
+			
+			dprintf(currDrive.in_fds[0], "{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
+			
+			// Should wait for output from the api, currently just blocks forever
+			char buff[4];
+			
+			while (1)
 			{
+				// TODO : see TODO above
+				if (read(currDrive.out_fds[0], buff, 4) > 0)
+				{
 
-			//	if (strncmp(buff, "{0}", 3) == 0)
-				//{
+					//	if (strncmp(buff, "{0}", 3) == 0)
+					//{
 
 					fuse_log_error("Successfully downloaded %s\n", buff);
 
@@ -727,23 +735,22 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 					}
 
 					return xmp_read(cachePath, buffer, size, offset, fi);
-			//	}
-			/*else if (strncmp(buff, "{", 1) == 0)
-				{
-					fuse_log_error("Unsuccessfully downloaded %s\n", buff);
-					return -1;
-				}*/
+					//	}
+					/*else if (strncmp(buff, "{", 1) == 0)
+						{
+							fuse_log_error("Unsuccessfully downloaded %s\n", buff);
+							return -1;
+						}*/
+				}
 			}
-		}
 		}
 		else
 		{
-			fuse_log("File found");
-			//fuse_log_error(cachePath);
+			
 			return xmp_read(cachePath, buffer, size, offset, fi);
 		}
-		
-	return -1;
+
+		return -1;
 	}
 
 	else if (strlen(pathBuffer) == 0)
@@ -766,33 +773,22 @@ static int do_write(const char *path, const char *buffer, size_t size, off_t off
 	fuse_log("--> Trying to write %s, %lu, %lu\n", path, offset, size);
 
 	char cwd[512];
-	if (getcwd(cwd, sizeof(cwd)) != NULL)
+	if (getcwd(cwd, sizeof(cwd)) == NULL)
 	{
-		fuse_log_error("Current working dir: %s\n", cwd);
-	}
-	else
-	{
-		perror("getcwd() error");
+		fuse_log_error("getcwd() error");
 		return -1;
 	}
 
 	char *writeFilePathLocal = strcat(cwd, CacheFile);
-	fuse_log_error("Write file path - %s\n", writeFilePathLocal);
 
 	char *pathcpy = strdup(path);
 	char *pathBuffer;
 	char *filename;
 	split_path_file(&pathBuffer, &filename, pathcpy);
 
-	char *remoteFilePath = parse_out_drive_name(pathBuffer);
-	fuse_log_error("%s\n", remoteFilePath);
 
-	// char *cachePath = strcat(writeFilePath, filename);
-
-	fuse_log_error("path buffer -%s\n", pathBuffer);
 	char *fullFileName = strcat(writeFilePathLocal, filename);
-	//	fuse_log_error("Cache path - %s\n",cachePath);
-	// char* downloadFolder= strcat(downloadFile,filename);
+	
 	int i = xmp_write(fullFileName, buffer, size, offset, fi);
 
 	if (is_drive(pathBuffer) == 0)
@@ -806,38 +802,29 @@ static int do_write(const char *path, const char *buffer, size_t size, off_t off
 			free(filename);
 			return -1;
 		}
-		Drive_Object currDrive = Drives[index];
+	///	Drive_Object currDrive = Drives[index];
 
-		// Ensuring we are selecting the proper drive to request the file from
-		fuse_log_error("The drive chosen is %s\n", currDrive.dirname);
-		//TODO: currently downloads from first executable in list. Should change to download most recent version of file?
-		if (!is_process_running(currDrive.pids[0]))
-		{
-			fuse_log_error("Drive api was closed\n");
-			free(pathBuffer);
-			free(filename);
-			return -1;
-		}
 
-		// Send download request to the proper api's stdin
-		//{"command":"upload","path":"<valid_path>","files":["<filename1>", "<filename2>", ...]}
-		
-		//dprintf(currDrive.in_fds[0], "{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, fullFileName);
-		//fuse_log_error("{\"command\":\"upload\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", remoteFilePath, fullFileName);
+		int file_index = get_file_index(path, index);
+		 json_array_set(Drives[index].FileList, file_index, create_new_file(filename, false, i));
+		dump_drive(&Drives[index]);
+	
 	}
+	
 	return i;
-
-	return 0;
 }
 
 static int xmp_write(const char *path, const char *buf, size_t size,
 					 off_t offset, struct fuse_file_info *fi)
 {
+
 	int fd;
 	int res;
 
 	(void)fi;
-	fd = open(path, O_WRONLY | O_CREAT);
+	// if(fi == NULL)
+		fd = open(path, O_WRONLY );
+	
 	if (fd == -1)
 		return -errno;
 
@@ -845,6 +832,15 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 	if (res == -1)
 		res = -errno;
 
+	// if(fi == NULL)
 	close(fd);
+
+ struct stat st;
+
+   if (stat(path, &st) == 0){
+		return st.st_size;
+
+   }
+      
 	return res;
 }
