@@ -1,10 +1,15 @@
-Generated at: 2022-10-27 09:39:57
----------> [handle_subdirectory] Called for /Google_Drive/myFolder
----------> [get_subdirectory] Failed....
----------> [handle_subdirectory] was null
----------> [handle_subdirectory] type: 2
----------> [get_subdirectory] Failed....
----------> [handle_subdirectory] Called for /Google_Drive/myFolder/subfolder
----------> [handle_subdirectory] wasnt null
----------> [handle_subdirectory] was element
----------> [Subdirectory_find_file] searching here
+Generated at: 2022-10-31 23:30:23
+---------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/hi
+---------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/hi
+---------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/hi
+---------> [Drive_delete] Could not find file /Google_Drive/whatever/hi_woo/hi
+---------> [Drive_delete] Above error message is OK if called by Drive_insert---------> [xmp_create] Current working dir: /mnt/c/merge_handle/cloud-storage-integration/FuseImplementation
+---------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/hi2
+---------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/hi2
+---------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/hi2
+---------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/hi2
+---------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/hi2
+---------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/hi2
+---------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/hi2
+---------> [Drive_delete] Could not find file /Google_Drive/whatever/hi_woo/hi2
+---------> [Drive_delete] Above error message is OK if called by Drive_insert
