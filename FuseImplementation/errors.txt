@@ -1,15 +1,12 @@
-Generated at: 2022-10-31 23:30:23
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/hi
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/hi
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/hi
----------> [Drive_delete] Could not find file /Google_Drive/whatever/hi_woo/hi
----------> [Drive_delete] Above error message is OK if called by Drive_insert---------> [xmp_create] Current working dir: /mnt/c/merge_handle/cloud-storage-integration/FuseImplementation
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/hi2
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/hi2
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/hi2
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/hi2
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/hi2
----------> [do_getattr] Could not find file /Google_Drive/whatever/hi_woo/hi2
----------> [get_file] Could not find file /Google_Drive/whatever/hi_woo/hi2
----------> [Drive_delete] Could not find file /Google_Drive/whatever/hi_woo/hi2
+Generated at: 2022-11-02 15:42:32
+---------> [xmp_read] Open---------> [get_file] Could not find file /Google_Drive/out
+---------> [do_getattr] Could not find file /Google_Drive/out
+---------> [get_file] Could not find file /Google_Drive/out
+---------> [do_getattr] Could not find file /Google_Drive/out
+---------> [get_file] Could not find file /Google_Drive/out
+---------> [do_getattr] Could not find file /Google_Drive/out
+---------> [Drive_delete] Could not find drive for out
+---------> [get_file] Could not find file out
+---------> [Drive_delete] Could not find file out
 ---------> [Drive_delete] Above error message is OK if called by Drive_insert
+---------> [xmp_read] Open---------> [xmp_read] Open---------> [xmp_read] Open

@@ -120,7 +120,7 @@ int Drive_insert(int drive_index, char * path, json_t * file)
 	//If we rename a file to an already existing one
 	//we need to delete the old one
 	fuse_log("Try deleting path to see if it already exists...");
-	fuse_log("(it's ok if this causes an error\n");
+	fuse_log("(it's ok if this causes an error)\n");
 	int did_delete = Drive_delete(path);
 	if (did_delete == 0)
 	{
