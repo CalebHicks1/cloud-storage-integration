@@ -428,7 +428,7 @@ static int xmp_rename(const char *from, const char *to /*, unsigned int flags */
 
 
 	 fuse_log("size: %d\n", size);
-	if (Drive_insert(to_drive_index, (char *)tolocal, create_new_file(tolocal, false, size)) < 0)
+	if (Drive_insert(to_drive_index, (char *) to, create_new_file(tolocal, false, size)) < 0)
 	{
 		fuse_log_error("Could not insert new file\n");
 		res = -1;
