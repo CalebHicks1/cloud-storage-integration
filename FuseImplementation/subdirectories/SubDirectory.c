@@ -263,6 +263,16 @@ Get_Result * get_subdirectory(int drive_index, char * path)
 	
 	
 }
+extern char *AbsoluteCachePath;
+
+//Mimic the file tree in the cache - called in insert_subdirectory
+int insert_subdirectory_in_cache(SubDirectory * subdir)
+{
+	char * folder_path = calloc(sizeof(char), strlen(AbsoluteCachePath) + strlen(subdir->dirname) + 1);
+	strcat(folder_path, AbsoluteCachePath);
+	strcat(folder_path, subdir->dirname);
+	//int res = mkdir(folder_path ,S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+}
 
 
 /**
@@ -295,6 +305,7 @@ int insert_subdirectory(int drive_index, SubDirectory * subdir)
 	}
 	//This is a good spot to check stuff:
 	//dump_drive(&(Drives[drive_index]));
+	insert_subdirectory_in_cache(subdir);
 	return 0;
 	
 	

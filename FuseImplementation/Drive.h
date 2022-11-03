@@ -12,6 +12,7 @@
 #include "JsonTools.h"
 #include "list/list.h"
 #include "subdirectories/SubDirectory.h"
+#include "path_utils.h"
 
 #define LEN_DIRNAME 200
 #define LEN_EXEC_PATH 400

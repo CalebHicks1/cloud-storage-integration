@@ -5,8 +5,9 @@
 #include "api.h"
 #include "MultiList.h"
 extern Drive_Object Drives[NUM_DRIVES];
-
+extern char *AbsoluteCachePath;
 #define BASH
+
 
 void dump_file_descriptors(Drive_Object * drive)
 {
@@ -49,6 +50,8 @@ void dump_drive(Drive_Object * drive)
 	}
 	
 }
+
+
 
 //Path is the absolute path
 int Drive_delete(char * path)
@@ -199,6 +202,8 @@ int Drive_insert(int drive_index, char * path, json_t * file)
 		fuse_log_error("Cannot find location to put new file %s\n", path);
 		fuse_log("Lets see if there's a subdirectory to put it in that doesn't exist yet\n");
 		char * path_minus_name = path_minus_filename(path);
+		char * stripped;
+		char * ret = form_cache_path(path, true, &stripped);
 		//char * subdirname = filename_minus_path(path_minus_name);
 		json_t * subdir = get_file(get_drive_index(path_minus_name), path_minus_name);
 		//char * name = getJsonFileName(subdir);

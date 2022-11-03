@@ -50,6 +50,24 @@ char * cache_location;
 //     }
 // }
 
+/**
+ * Checks if delete log exists, if log does not exist create log
+ * otherwise append to log
+ */
+void addPathToDeleteLog(const char *logPath, char *directory)
+{
+	FILE *fPtr;
+	if ((fPtr = fopen(logPath, "a")) == NULL)
+	{
+		fPtr = fopen(logPath, "w");
+	}
+
+	fputs(directory, fPtr);
+	fputs("\n", fPtr);
+
+	fclose(fPtr);
+}
+
 int init_cache_location()
 {
     char cwd[512];

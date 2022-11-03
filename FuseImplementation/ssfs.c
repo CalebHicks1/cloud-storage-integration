@@ -29,12 +29,13 @@
 #include "api.h"
 #include "subdirectories/subdir_utils.h"
 #include "cache_utils.h"
+#include "path_utils.h"
 /*Function definitions *******************************************/
 
 static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
 static int do_getattr(const char *path, struct stat *st);
 static int do_read(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi);
-static void split_path_file(char **pathBuffer, char **filenameBuffer, const char *fullPath);
+//static void split_path_file(char **pathBuffer, char **filenameBuffer, const char *fullPath);
 static int xmp_create(const char *path, mode_t mode,
 					  struct fuse_file_info *fi);
 static int do_write(const char *path, const char *buffer, size_t size, off_t offset, struct fuse_file_info *fi);
@@ -86,70 +87,7 @@ json_t *create_new_file(const char *path, bool isDir, int size)
 	return new_file;
 }
 
-/**
- * Builds the absolute path to directory, if stripRoot = true, the
- * root directory is removed from the path before the absolute path
- * is made.
- * if root should be removed, providing a char ** for strippedFile
- * to return the new path.
- */
-char *form_cache_path(const char *directory, bool stripRoot, char **strippedFile)
-{
-	char *dir = strdup(directory);
-	if (stripRoot)
-	{
-		char *pathBuffer;
-		char *newDirName;
-		split_path_file(&pathBuffer, &newDirName, directory);
-		dir = newDirName;
-		if (strippedFile != NULL)
-		{
-			*strippedFile = newDirName;
-		}
-	}
-	char *absCpy = strdup(AbsoluteCachePath);
-	char *localPath = strcat(absCpy, dir);
-}
 
-/**
- * Checks if delete log exists, if log does not exist create log
- * otherwise append to log
- */
-void addPathToDeleteLog(const char *logPath, char *directory)
-{
-	FILE *fPtr;
-	if ((fPtr = fopen(logPath, "a")) == NULL)
-	{
-		fPtr = fopen(logPath, "w");
-	}
-
-	fputs(directory, fPtr);
-	fputs("\n", fPtr);
-
-	fclose(fPtr);
-}
-
-/*
-Removes the last file/directory from a directory
-Ex. Google_Drive/Directory1/file.txt ->Google_Drive/Directory1
-*/
-char*  strip_filename_from_directory(char* directory){
-	char* dir = strdup(directory);
-	fuse_log("Before split - %s \n", dir);
-	char* after = strrchr(dir, '/');
-	fuse_log("Before split - %s \n", after);
-	if (strlen(after) > 0){
-char* before = calloc(strlen(dir)- strlen(after) + 1, sizeof(char));
-	 before = strncpy(before, dir, strlen(dir)- strlen(after));
-	 
-	return before;
-	}
-	else 
-	return NULL;
-	
-
-
-}
 // This stuff is from the passthrough example, and mostly unmodified
 // The key method is xmp_create
 
@@ -362,7 +300,7 @@ char* cachePathWithSubs = strip_filename_from_directory(fullFileName);
 			download_file(Drives[index].in_fds[0], Drives[index].out_fds[0], cachePathWithSubs, filename, fullFileName);
 			}
 			else
-			download_file(Drives[index].in_fds[0], Drives[index].out_fds[0], AbsoluteCachePath, filename, fullFileName);
+			download_file(Drives[index].in_fds[0], Drives[index].out_fds[0], (char*) AbsoluteCachePath, filename, fullFileName);
 		}
 		//fuse_log("Drive index %d", index);
 	}
