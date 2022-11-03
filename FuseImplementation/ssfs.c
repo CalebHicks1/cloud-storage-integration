@@ -28,6 +28,7 @@
 #include "logging.h"
 #include "api.h"
 #include "subdirectories/subdir_utils.h"
+#include "cache_utils.h"
 /*Function definitions *******************************************/
 
 static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
@@ -39,7 +40,6 @@ static int xmp_create(const char *path, mode_t mode,
 static int do_write(const char *path, const char *buffer, size_t size, off_t offset, struct fuse_file_info *fi);
 static int xmp_write(const char *path, const char *buf, size_t size,
 					 off_t offset, struct fuse_file_info *fi);
-static int download_file(int fdin, int fdout, char *downloadFile, char *filename, char *cachePath);
 
 /*Global varibales and structs ***********************************/
 
@@ -735,42 +735,7 @@ static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 	return res;
 }
 
-static int download_file(int fdin, int fdout, char *downloadFile, char *filename, char *cachePath)
-{
-	dprintf(fdin, "{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
-	fuse_log("{\"command\":\"download\", \"path\":\"%s\", \"files\":[\"%s\"]}\n", downloadFile, filename);
-	// Should wait for output from the api, currently just blocks forever
-	char buff[11];
-	int i = 1;
-	while (1)
-	/*{
-		i++;
-		if (access(cachePath, F_OK) != -1){
-			return 1;
-		}
-	}*/
-		// TODO : see TODO above
-		if (read(fdout, buff, 10) > 0)
-		{
 
-			if (strncmp(buff, "{\"code\":0,\"message\":\"No Error\"}", 8) == 0)
-			{
-
-				fuse_log_error("Successfully downloaded %s\n", buff);
-				return 1;
-
-				return 1;
-			}
-			else if (strncmp(buff, "{\"code\":0,\"message\":\"No Error\"}", 1) == 0)
-			{
-				fuse_log_error("Unsuccessfully downloaded %s\n", buff);
-				return -1;
-			}
-		
-		}
-
-	return -1;
-}
 
 static int do_read(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi)
 {
@@ -798,33 +763,45 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 	if (is_drive(pathBuffer) == 0)
 	{ // File is requested straight from drive
 
-		int index = get_drive_index(pathBuffer);
-		if (index < 0)
-		{
-			fuse_log_error("Error in get_drive_index\n");
-			free(pathBuffer);
-			free(filename);
-			return -1;
-		}
-		Drive_Object currDrive = Drives[index];
+		// char * name_in_cache;
+		// if (cache_find_or_download(name_in_cache, (char*) path) > 0)
+		// {
+		// 	fuse_log("File already in cache!\n");
+		// }
+		// int index = get_drive_index(pathBuffer);
+		// if (index < 0)
+		// {
+		// 	fuse_log_error("Error in get_drive_index\n");
+		// 	free(pathBuffer);
+		// 	free(filename);
+		// 	return -1;
+		// }
+		// Drive_Object currDrive = Drives[index];
 
-		char *downloadFile2 = calloc(strlen(downloadFile) + strlen(filename) + 1, sizeof(char));
-		memcpy(downloadFile2, downloadFile, strlen(downloadFile));
-		char *cachePath = strcat(downloadFile2, filename);
-		// fuse_log("After cachePath - %s\n", cachePath);
-		if (access(cachePath, F_OK) == -1)
-		{
-			if (download_file(currDrive.in_fds[0],currDrive.out_fds[0], downloadFile, filename, cachePath) > 0)
-			{
-				return xmp_read(cachePath, buffer, size, offset, fi);
-			}
-		}
-		else
-		{
+		// char *downloadFile2 = calloc(strlen(downloadFile) + strlen(filename) + 1, sizeof(char));
+		// memcpy(downloadFile2, downloadFile, strlen(downloadFile));
+		// char *cachePath = strcat(downloadFile2, filename);
+		// // fuse_log("After cachePath - %s\n", cachePath);
+		// if (access(cachePath, F_OK) == -1)
+		// {
+		// 	if (download_file(currDrive.in_fds[0],currDrive.out_fds[0], downloadFile, filename, cachePath) > 0)
+		// 	{
+		// 		return xmp_read(cachePath, buffer, size, offset, fi);
+		// 	}
+		// }
+		// else
+		// {
 
+		// 	return xmp_read(cachePath, buffer, size, offset, fi);
+		// }
+
+		// return -1;
+		char * cachePath;
+		if (cache_find_or_download(&cachePath, (char*) path) == 0)
+		{
 			return xmp_read(cachePath, buffer, size, offset, fi);
 		}
-
+		fuse_log_error("Failed to retrieve or download %s\n", path);
 		return -1;
 	}
 

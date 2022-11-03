@@ -13,3 +13,5 @@ mytest
 mytestread.txt
 multitest
 mytest
+testread.txt
+read.txt
