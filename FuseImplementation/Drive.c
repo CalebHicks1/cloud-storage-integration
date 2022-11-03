@@ -62,6 +62,7 @@ int Drive_delete(char * path)
 	if (file == NULL)
 	{
 		fuse_log_error("Could not find file %s\n", path);
+		fuse_log_error("Above error message is OK if called by Drive_insert\n");
 		return -1;
 	}
 	
@@ -116,7 +117,17 @@ int Drive_delete(char * path)
  */
 int Drive_insert(int drive_index, char * path, json_t * file)
 {
-	fuse_log("Inserting %s\n", getJsonFileName(file));
+	//If we rename a file to an already existing one
+	//we need to delete the old one
+	fuse_log("Try deleting path to see if it already exists...");
+	fuse_log("(it's ok if this causes an error)\n");
+	int did_delete = Drive_delete(path);
+	if (did_delete == 0)
+	{
+		fuse_log("Deleted the original\n");
+	}
+
+
 	Get_Result * get_result = get_subdirectory(drive_index, (char*) path);
 	if (get_result->type == ROOT)
 	{
@@ -169,7 +180,6 @@ json_t *get_file(int drive_index, char *path)
 		dump_drive(&Drives[0]);
 		return NULL;
 	}
-	fuse_log("We found the file %s!!!!!\n", path);
 	return file;
 }
 //							Setup / Updating
@@ -272,11 +282,11 @@ int get_subdirectory_contents(json_t **list, int drive_index, char *path)
  */
 SubDirectory *handle_subdirectory(char *path)
 {
-	fuse_log("Called for %s\n", path);
-	fuse_log_error("Called for %s\n", path);
+	//fuse_log("Called for %s\n", path);
+	//fuse_log_error("Called for %s\n", path);
 	int drive_index = get_drive_index(path);
 
-	dump_drive(&Drives[drive_index]);
+	//dump_drive(&Drives[drive_index]);
 	if (drive_index < 0)
 	{
 		fuse_log_error("Drive not found for subdirectory %s\n", path);
@@ -288,38 +298,8 @@ SubDirectory *handle_subdirectory(char *path)
 	//(ret->type == THIS )
 	if (ret->subdirectory != NULL && ret->type != ELEMENT)
 	{
-		if (ret->type == ELEMENT)
-		{
-			fuse_log("Is element!!!!!!!\n");
-		}
 		fuse_log("Subdirectory %s already exists, returning it\n", path);
 		return ret->subdirectory;
-	}
-	else
-	{
-		if (ret->subdirectory == NULL)
-		{
-			fuse_log_error("was null\n");
-			fuse_log_error("type: %d\n", ret->type);
-			
-		}
-		else
-		{
-			fuse_log_error("wasnt null\n");
-			if (ret->type == ELEMENT)
-			{
-				fuse_log_error("was element\n");
-				
-			}
-			else 
-			{
-				fuse_log_error("WASNT element\n");
-				fuse_log_error("Type: %d\n", ret->type);
-				
-			}
-			
-		}
-		
 	}
 	
 	// Generate the subdirectory
@@ -336,15 +316,12 @@ SubDirectory *handle_subdirectory(char *path)
 		return NULL;
 	}
 	
-	//New subdirectory version!
 	//Create directory
 	SubDirectory * new = SubDirectory_create(path);
 	//Insert subdirectory
 	insert_subdirectory(drive_index, new);
 	//Insert files 
 	fuse_log("Getting files for new subdirectory structure: %s\n", path);
-	//new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path, Drives[drive_index].in, Drives[drive_index].out);
-	//New version doesn't need fds
 	new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path);
 	
 	return new;
@@ -354,40 +331,14 @@ SubDirectory *handle_subdirectory(char *path)
  * Assign *list to be list of files corresponding to Drives[i], returning # of files.
  * If optional_path != NULL, get list of files at the subdirectory optional_path instead
  * Params:
- *
- * list: Pointer to list of json objects, which will be populated with files
- *
- * cmd: executable path to API to use
- *
+ * list: list to store contents in
+ * Drive: Drive the files reside in (passed in to get executable info)
  * optional_path: if not NULL, corresponds to the subdirectory in which we want to
  * list the files - if NULL, list at root level of the drive
  */
 int listAsArray(json_t **list, struct Drive_Object * drive, char *optional_path)
 {
 	return listAsArrayV2(list, drive, optional_path);
-	// char execOutput[100][LINE_MAX_BUFFER_SIZE] = {};
-
-	// int a = myGetFileList(execOutput, drive->exec_path, optional_path, drive->in, drive->out);
-	// fuse_log("First a: %d\n", a);
-	// json_t *fileListAsArray = NULL;
-
-	// if (a < 1)
-	// {
-	// 	printf("file list getter was not executed properly or output was empty\n");
-	// 	return 0;
-	// }
-
-	// int arraySize = parseJsonString(&fileListAsArray, execOutput, a);
-
-	// if (arraySize < 1)
-	// {
-	// 	return 0;
-	// }
-	// *list = fileListAsArray;
-	// //--------------------------
-	// fuse_log("Now calling listAsArrayV2");
-	
-	// return arraySize;
 }
 
 /*****************************************************************************/
