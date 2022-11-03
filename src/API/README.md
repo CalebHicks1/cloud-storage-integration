@@ -16,9 +16,10 @@ Valid file inputs:
 - or, provide the relative path from your API client's directory
 
 Valid file outputs:
-- `{"Name":"file.txt","IsDir":false,"Size":1024}`
-- `{"Name":"dir1","IsDir":true,"Size":3248}`
+- `{"Name":"file.txt","IsDir":false,"Size":1024,"Modified":1667511701}`
+- `{"Name":"dir1","IsDir":true,"Size":0,"Modified":1635975701}`
 - the size should be in bytes
+- the modified time is in Unix time
 
 ### List Files - `list`
 How to format a call that lists all files in a directory given by the `path` field.
