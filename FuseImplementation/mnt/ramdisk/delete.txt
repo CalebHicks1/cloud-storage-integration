@@ -15,3 +15,9 @@ multitest
 mytest
 testread.txt
 read.txt
+testread.txt
+mytest
+test1
+testread.txt
+hi.txt
+mytest

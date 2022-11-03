@@ -1,3 +1,20 @@
-Generated at: 2022-11-02 22:25:58
----------> [download_file] Successfully downloaded {"code":0,
----------> [xmp_read] Open
+Generated at: 2022-11-03 13:46:37
+---------> [get_subdirectory] :(
+---------> [Subdirectory_find_file] Couldn't find subdirectory while searching for the file: /Google_Drive/myFolder/mytest
+---------> [get_file] Could not find file /Google_Drive/myFolder/mytest
+---------> [do_getattr] Could not find file /Google_Drive/myFolder/mytest
+---------> [get_subdirectory] :(
+---------> [Subdirectory_find_file] Couldn't find subdirectory while searching for the file: /Google_Drive/myFolder/mytest
+---------> [get_file] Could not find file /Google_Drive/myFolder/mytest
+---------> [do_getattr] Could not find file /Google_Drive/myFolder/mytest
+---------> [get_subdirectory] :(
+---------> [Subdirectory_find_file] Couldn't find subdirectory while searching for the file: /Google_Drive/myFolder/mytest
+---------> [get_file] Could not find file /Google_Drive/myFolder/mytest
+---------> [do_getattr] Could not find file /Google_Drive/myFolder/mytest
+---------> [get_subdirectory] :(
+---------> [Subdirectory_find_file] Couldn't find subdirectory while searching for the file: /Google_Drive/myFolder/mytest
+---------> [get_file] Could not find file /Google_Drive/myFolder/mytest
+---------> [Drive_delete] Could not find file /Google_Drive/myFolder/mytest
+---------> [Drive_delete] Above error message is OK if called by Drive_insert
+---------> [get_subdirectory] :(
+---------> [Drive_insert] Cannot find location to put new file /Google_Drive/myFolder/mytest

@@ -111,6 +111,49 @@ int Drive_delete(char * path)
 	}
 }
 
+char * path_minus_filename(char * path)
+{
+	char * ptr = path;
+	char * last_slash = NULL;
+	while (*ptr != '\0')
+	{
+		if (*ptr == '/')
+			last_slash = ptr;
+		ptr++;
+	}
+	if (last_slash == NULL)
+	{
+		fuse_log_error("Found no slashes in file path %s\n", path);
+		return NULL;
+	}
+	int new_length = strlen(path) - strlen(last_slash);
+	char * res = calloc(sizeof(char*), new_length + 1);
+	memcpy(res, path, new_length);
+	return res;
+}
+
+char * filename_minus_path(char * path)
+{
+	char * ptr = path;
+	char * last_slash = NULL;
+	while (*ptr != '\0')
+	{
+		if (*ptr == '/')
+			last_slash = ptr;
+		ptr++;
+	}
+	if (last_slash == NULL)
+	{
+		fuse_log_error("Found no slashes in file path %s\n", path);
+		return NULL;
+	}
+	last_slash++;
+	int new_length = strlen(last_slash);
+	char * res = calloc(sizeof(char*), new_length + 1);
+	memcpy(res, last_slash, new_length);
+	return res;
+}
+
 /**
  * Insert a newly generated file into drive. Path should contain the full path of the file,
  * while the json representation should have the name set to be the relative path
@@ -151,7 +194,38 @@ int Drive_insert(int drive_index, char * path, json_t * file)
 	}
 	else
 	{
+		//This is for when we try to move a file into a subdirectory we 
+		//have not populated yet
 		fuse_log_error("Cannot find location to put new file %s\n", path);
+		fuse_log("Lets see if there's a subdirectory to put it in that doesn't exist yet\n");
+		char * path_minus_name = path_minus_filename(path);
+		//char * subdirname = filename_minus_path(path_minus_name);
+		json_t * subdir = get_file(get_drive_index(path_minus_name), path_minus_name);
+		//char * name = getJsonFileName(subdir);
+		if (subdir == NULL)
+		{
+			fuse_log_error("Directory to put file in does not exist");
+		}
+		json_t *isDir = json_object_get(subdir, "IsDir");
+		if (isDir != NULL)
+		{
+			if (json_is_true(isDir))
+			{
+				fuse_log("Is directory!\n");
+				SubDirectory * generated_subdir = handle_subdirectory(path_minus_name);
+				if (generated_subdir == NULL)
+				{
+					fuse_log_error("Generating subdirectory failed\n");
+					return -1;
+				}
+				return SubDirectory_insert(generated_subdir, file);
+			}
+			else
+			{
+				fuse_log_error("%s is not a folder\n", path_minus_name);
+				return -1;
+			}
+		}
 		return -1;
 	}
 	
