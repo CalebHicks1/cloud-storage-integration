@@ -202,6 +202,14 @@ void __get_subdirectory(Get_Result * result, SubDirectory * dir, char ** tokens,
 	{
 		fuse_log("%s\n", *tokens);
 		fuse_log("element case\n");
+		if (*(tokens + 1) != NULL)
+		{
+			//The next subdirectory is null but...
+			//There is another directory in the path...
+			fuse_log("New case: this means the subdirectory we should get doesn't exist yet\n");
+			result->type = ERROR;
+			return;
+		}
 		result->type = ELEMENT;
 		result->subdirectory = dir;
 		return;

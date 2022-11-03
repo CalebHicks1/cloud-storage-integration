@@ -56,6 +56,7 @@ void dump_drive(Drive_Object * drive)
 //Path is the absolute path
 int Drive_delete(char * path)
 {
+	fuse_log("Called for %s\n", path);
 	int drive_index = get_drive_index(path);
 	if (drive_index < 0)
 	{
@@ -201,10 +202,8 @@ int Drive_insert(int drive_index, char * path, json_t * file)
 		//have not populated yet
 		fuse_log_error("Cannot find location to put new file %s\n", path);
 		fuse_log("Lets see if there's a subdirectory to put it in that doesn't exist yet\n");
-		char * path_minus_name = path_minus_filename(path);
-		char * stripped;
-		char * ret = form_cache_path(path, true, &stripped);
-		//char * subdirname = filename_minus_path(path_minus_name);
+		//char * path_minus_name = parse_out_drive_name(path);
+		char * path_minus_name = strip_filename_from_directory(path);
 		json_t * subdir = get_file(get_drive_index(path_minus_name), path_minus_name);
 		//char * name = getJsonFileName(subdir);
 		if (subdir == NULL)

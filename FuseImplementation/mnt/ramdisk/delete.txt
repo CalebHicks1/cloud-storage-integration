@@ -21,3 +21,14 @@ test1
 testread.txt
 hi.txt
 mytest
+mytest
+mytest
+mytest
+infolder
+infolder
+mytest
+mytest
+infolder
+infoldertest
+infolder
+infolder
