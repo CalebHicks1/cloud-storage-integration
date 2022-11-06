@@ -1,5 +1,4 @@
 #include "path_utils.h"
-
 extern char *AbsoluteCachePath;
 /**
  * Builds the absolute path to directory, if stripRoot = true, the
@@ -13,16 +12,16 @@ char *form_cache_path(const char *directory, bool stripRoot, char **strippedFile
 	char *dir = strdup(directory);
 	if (stripRoot)
 	{
-		char *pathBuffer;
-		char *newDirName;
-		split_path_file(&pathBuffer, &newDirName, directory);
-		dir = newDirName;
+		dir = parse_out_drive_name(directory);
+		fuse_log("dir - %s vs newDirName -  \n", dir);
 		if (strippedFile != NULL)
 		{
-			*strippedFile = newDirName;
+			*strippedFile = dir;
 		}
 	}
-	char *absCpy = strdup(AbsoluteCachePath);
+	//char *absCpy = strdup(AbsoluteCachePath);
+		char *absCpy = calloc(strlen(AbsoluteCachePath)+strlen(dir) +1, sizeof(char));
+	absCpy = memcpy(absCpy, AbsoluteCachePath, strlen(AbsoluteCachePath) * sizeof(char));
 	char *localPath = strcat(absCpy, dir);
 }
 

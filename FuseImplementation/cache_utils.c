@@ -4,7 +4,8 @@
 
 extern const char *CacheFile;
 extern Drive_Object Drives[NUM_DRIVES];
-char * cache_location;
+extern char *AbsoluteCachePath;
+//char * cache_location;
 
 // char * assemble_cache_path(char *path)
 // {
@@ -50,6 +51,14 @@ char * cache_location;
 //     }
 // }
 
+
+
+int add_subdirectory_to_cache(char* path){
+ fuse_log("add cache dir called %s\n", path);
+char* cacheDir  =  form_cache_path(path, true, NULL);
+ return mkdir(cacheDir, 0755);
+ 
+}
 /**
  * Checks if delete log exists, if log does not exist create log
  * otherwise append to log
@@ -68,7 +77,7 @@ void addPathToDeleteLog(const char *logPath, char *directory)
 	fclose(fPtr);
 }
 
-int init_cache_location()
+/**int init_cache_location()
 {
     char cwd[512];
     if (getcwd(cwd, sizeof(cwd)) == NULL)
@@ -80,21 +89,22 @@ int init_cache_location()
     strcat(cache_location, cwd);
     strcat(cache_location, CacheFile);
     return 0;
-}
+}**/
 
 int cache_find_or_download(char ** res, char * path)
 {
-    if (cache_location == NULL)
+    /*if (cache_location == NULL)
     {
         if (init_cache_location() < 0)
         {
             return -1;
         }
-    }
+    }*/
     char * rel_filename = parse_out_drive_name(path);
-    *res = calloc(sizeof(char), strlen(rel_filename) + strlen(cache_location) + 1);
-    strcat(*res, cache_location);
-    strcat(*res, rel_filename);
+   // *res = calloc(sizeof(char), strlen(rel_filename) + strlen(cache_location) + 1);
+   // strcat(*res, cache_location);
+   // strcat(*res, rel_filename);
+   *res =  form_cache_path(rel_filename, false, NULL);
     if (access(*res, F_OK) >= 0)
     {
         return 0;
@@ -107,16 +117,28 @@ int cache_find_or_download(char ** res, char * path)
         return -1;
     }
     Drive_Object currDrive = Drives[drive_index];
-    int downloaded = download_file(currDrive.in_fds[0], currDrive.out_fds[0], cache_location, rel_filename, *res);
-    if (downloaded < 0)
-    {
-        fuse_log_error("Downloading %s failed\n", path);
-        return -1;
-    }
+    char *cachePathWithSubs = strip_filename_from_directory(rel_filename);
+
+int downloaded =-1;
+	if (access(*res, F_OK) == -1)
+	{
+
+		if (cachePathWithSubs != NULL)
+		{
+			downloaded = download_file(currDrive.in_fds[0], currDrive.out_fds[0], cachePathWithSubs, rel_filename, *res);
+		}
+		else
+			downloaded = download_file(currDrive.in_fds[0], currDrive.out_fds[0], AbsoluteCachePath, rel_filename, *res);
+
+		// fuse_log("Drive index %d", index);
+	}
+   // int downloaded = download_file(currDrive.in_fds[0], currDrive.out_fds[0], cache_location, rel_filename, *res);
+  
     if (access(*res, F_OK) >= 0)
     {
         return 0;
     }
+    fuse_log_error("Downloading %s failed\n", path);
     return -1;
 
         
@@ -143,7 +165,7 @@ int download_file(int fdin, int fdout, char *downloadFile, char *filename, char 
 		if (read(fdout, buff, 10) > 0)
 		{
 
-			if (strncmp(buff, "{\"code\":0,\"message\":\"No Error\"}", 8) == 0)
+			if (strncmp(buff, "{\"code\":0,\"message\":\"No Error\"}", 9) == 0)
 			{
 
 				fuse_log_error("Successfully downloaded %s\n", buff);

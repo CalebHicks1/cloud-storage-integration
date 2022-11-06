@@ -8,5 +8,6 @@
 int cache_find_or_download(char ** res, char * path);
 void addPathToDeleteLog(const char *logPath, char *directory);
 int download_file(int fdin, int fdout, char *downloadFile, char *filename, char *cachePath);
+int add_subdirectory_to_cache(char* path);
 
 #endif

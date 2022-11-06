@@ -4,6 +4,7 @@
 //#include "ssfs.h"
 #include "api.h"
 #include "MultiList.h"
+#include "cache_utils.h"
 extern Drive_Object Drives[NUM_DRIVES];
 extern char *AbsoluteCachePath;
 #define BASH
@@ -398,6 +399,8 @@ SubDirectory *handle_subdirectory(char *path)
 	SubDirectory * new = SubDirectory_create(path);
 	//Insert subdirectory
 	insert_subdirectory(drive_index, new);
+
+	add_subdirectory_to_cache(path);
 	//Insert files 
 	fuse_log("Getting files for new subdirectory structure: %s\n", path);
 	new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path);

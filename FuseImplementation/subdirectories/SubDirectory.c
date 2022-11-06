@@ -294,6 +294,7 @@ int insert_subdirectory(int drive_index, SubDirectory * subdir)
 	{
 		fuse_log("Inserting subdirectory %s into root directory\n", &(subdir->dirname[0]));
 		list_push_front(&(Drives[drive_index].subdirectories_list), &(subdir->elem));
+		//Drives[drive_index].num_files ++;
 	}
 	else if (result->type == THIS)
 	{
@@ -304,6 +305,7 @@ int insert_subdirectory(int drive_index, SubDirectory * subdir)
 	{
 		fuse_log("Going to insert %s into subdirectory %s\n", subdir->dirname, result->subdirectory->dirname);
 		list_push_front(&(result->subdirectory->subdirectories_list), &(subdir->elem));
+		//result->subdirectory->num_files++;
 	}
 	else if (result->type == ERROR)
 	{

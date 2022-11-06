@@ -84,7 +84,8 @@ int get_drive_index(const char *path);
 char * parse_out_drive_name(char * path);
 int get_file_index(const char *path, int driveIndex);
 int kill_all_processes();
-
+char * filename_minus_path(char * path)
+;
 
 //Debug
 void dump_drive(Drive_Object * drive);
