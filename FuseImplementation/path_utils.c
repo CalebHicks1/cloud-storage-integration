@@ -32,10 +32,11 @@ Ex. Google_Drive/Directory1/file.txt ->Google_Drive/Directory1
 */
 char*  strip_filename_from_directory(char* directory){
 	char* dir = strdup(directory);
-	fuse_log("Before split - %s \n", dir);
+	
 	char* after = strrchr(dir, '/');
-	fuse_log("Before split - %s \n", after);
-	if (strlen(after) > 0){
+	
+	if (after != NULL && strlen(after) > 0){
+		
 char* before = calloc(strlen(dir)- strlen(after) + 1, sizeof(char));
 	 before = strncpy(before, dir, strlen(dir)- strlen(after));
 	 
@@ -44,8 +45,6 @@ char* before = calloc(strlen(dir)- strlen(after) + 1, sizeof(char));
 	else 
 	return NULL;
 	
-
-
 }
 
 /**

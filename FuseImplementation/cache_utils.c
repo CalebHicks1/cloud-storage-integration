@@ -100,11 +100,13 @@ int cache_find_or_download(char ** res, char * path)
             return -1;
         }
     }*/
-    char * rel_filename = parse_out_drive_name(path);
+    //char * rel_filename = parse_out_drive_name(path);
    // *res = calloc(sizeof(char), strlen(rel_filename) + strlen(cache_location) + 1);
    // strcat(*res, cache_location);
    // strcat(*res, rel_filename);
-   *res =  form_cache_path(rel_filename, false, NULL);
+   char * rel_filename;
+   *res =  form_cache_path(path, true, &rel_filename);
+  
     if (access(*res, F_OK) >= 0)
     {
         return 0;
@@ -123,7 +125,7 @@ int downloaded =-1;
 	if (access(*res, F_OK) == -1)
 	{
 
-		if (cachePathWithSubs != NULL)
+		if (cachePathWithSubs != NULL )
 		{
 			downloaded = download_file(currDrive.in_fds[0], currDrive.out_fds[0], cachePathWithSubs, rel_filename, *res);
 		}

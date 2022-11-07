@@ -747,10 +747,10 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 
 	char *downloadFile = strcat(cwd, CacheFile);
 
-	char *pathBuffer;
-	char *filename;
-
-	split_path_file(&pathBuffer, &filename, path);
+	/*char *pathBuffe;
+	char *filenam;
+	split_path_file(&pathBuffe, &filenam, path);*/
+	
 
 	if (get_drive_index(path) >= 0)
 	{ // File is requested straight from drive
@@ -767,12 +767,12 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		return -1;
 	}
 
-	else if (strlen(pathBuffer) == 0)
+/*	else if (strlen(pathBuffer) == 0)
 	{
 		// File is requested from home directory
 		// There currently cannot be any files in home directory so we will implement this later
 		fuse_log_error("File does not exist\n");
-	}
+	}*/
 
 	return 0;
 }
