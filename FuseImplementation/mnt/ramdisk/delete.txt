@@ -32,3 +32,6 @@ infolder
 infoldertest
 infolder
 infolder
+mytest
+mytest2
+mytest

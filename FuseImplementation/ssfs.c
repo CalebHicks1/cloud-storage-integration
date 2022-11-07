@@ -88,6 +88,7 @@ json_t *create_new_file(const char *path, bool isDir, int size)
 }
 
 // This stuff is from the passthrough example, and mostly unmodified
+//The "mostly unmodified" thing is less true now lol
 // The key method is xmp_create
 
 #ifdef HAVE_UTIMENSAT
@@ -125,25 +126,66 @@ static int xmp_mkdir(const char *path, mode_t mode)
 	int res = mkdir(localPath, mode);
 	if (res == -1)
 	{
-		return errno;
+		//If this is because the directory already exists in the cache, this is ok 
+		//(check error code?)
+		fuse_log_error("Could not do mkdir in cache for %s\n", localPath);
 	}
 
 	// Add new directory tofile tree
 	SubDirectory *newSub = SubDirectory_create((char *)path);
+	newSub->FileList = json_array();
+	
 	// Get_Result * result = get_subdirectory(drive_index, &(newSub->dirname[0]));
 	// result->subdirectory->num_files++;
-	insert_subdirectory(drive_index, newSub);
-
-	json_t *new_file = create_new_file(newDirName, true, 0);
-	int err = json_array_insert(Drives[drive_index].FileList, 0, new_file);
-	if (err != 0)
+	Get_Result * get_result = get_subdirectory(drive_index, path);
+	if (get_result->type == ELEMENT)
 	{
-		fuse_log_error("Directory not added");
-	}
+		if (get_result->subdirectory == NULL)
+		{
+			fuse_log_error("This shouldn't happen :(\n");
+			return -1;
+		}
+		fuse_log("Need to insert new subdirectory json rep into its parent subdir\n");
+		json_t *new_file = create_new_file(parse_out_drive_name(newDirName), true, 0);
+		int err = json_list_append(&get_result->subdirectory->FileList, new_file);
+		if (err != 0)
+		{
+			fuse_log_error("Subdirectory json rep not added\n");
+			return -1;
+		}
+		get_result->subdirectory->num_files++;
 
-	Drives[drive_index].num_files += 1;
-	dump_drive(&Drives[drive_index]);
+	}
+	else if (get_result->type == ROOT)
+	{
+		fuse_log("Root case\n");
+		json_t *new_file = create_new_file(newDirName, true, 0);
+		int err = json_list_append(&Drives[drive_index].FileList, new_file);
+		if (err != 0)
+		{
+			fuse_log_error("Subdirectory json retp not added\n");
+			return -1;
+		}
+		Drives[drive_index].num_files++;
+	}
+	else {
+		fuse_log_error("Error finding location to put subdirectory\n");
+		return -1;
+	}
+	insert_subdirectory(drive_index, newSub);
+	
+
 	return 0;
+	// json_t *new_file = create_new_file(newDirName, true, 0);
+	// int err = json_array_insert(Drives[drive_index].FileList, 0, new_file);
+	// if (err != 0)
+	// {
+	// 	fuse_log_error("Directory not added");
+	// }
+
+	// Drives[drive_index].num_files += 1;
+	// dump_drive(&Drives[drive_index]);
+	// return 0;
 }
 
 /** remove subdirectory from tree*/
@@ -618,6 +660,8 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 				fuse_log_error("fatal\n");
 				exit(1);
 			}
+			fuse_log("Going to dump subdirectory here\n");
+			dump_subdirectory(dir, 0);
 			for (size_t index = 0; index < dir->num_files; index++)
 			{
 				const char *fileName = getJsonFileName(json_array_get(dir->FileList, index));
