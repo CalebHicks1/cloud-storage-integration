@@ -106,6 +106,7 @@ int cache_find_or_download(char ** res, char * path)
    // strcat(*res, rel_filename);
    char * rel_filename;
    *res =  form_cache_path(path, true, &rel_filename);
+
   
     if (access(*res, F_OK) >= 0)
     {

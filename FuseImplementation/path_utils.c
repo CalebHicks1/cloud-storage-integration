@@ -12,8 +12,8 @@ char *form_cache_path(const char *directory, bool stripRoot, char **strippedFile
 	char *dir = strdup(directory);
 	if (stripRoot)
 	{
-		dir = parse_out_drive_name(directory);
-		fuse_log("dir - %s vs newDirName -  \n", dir);
+		char *dircpy = strdup(directory);
+		dir = parse_out_drive_name(dircpy);
 		if (strippedFile != NULL)
 		{
 			*strippedFile = dir;

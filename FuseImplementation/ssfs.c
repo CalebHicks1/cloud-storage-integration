@@ -137,7 +137,7 @@ static int xmp_mkdir(const char *path, mode_t mode)
 	
 	// Get_Result * result = get_subdirectory(drive_index, &(newSub->dirname[0]));
 	// result->subdirectory->num_files++;
-	Get_Result * get_result = get_subdirectory(drive_index, path);
+	Get_Result * get_result = get_subdirectory(drive_index, (char*) path);
 	if (get_result->type == ELEMENT)
 	{
 		if (get_result->subdirectory == NULL)
@@ -821,7 +821,7 @@ static int do_write(const char *path, const char *buffer, size_t size, off_t off
 			///	Drive_Object currDrive = Drives[index];
 			struct stat st;
 			int size = 0;
-			if (stat(path, &st) == 0)
+			if (stat(fullFileName, &st) == 0)
 			{
 				size = st.st_size;
 			}
@@ -844,7 +844,7 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 
 	int fd;
 	int res;
-	fuse_log(path);
+	
 
 	(void)fi;
 	// if(fi == NULL)
