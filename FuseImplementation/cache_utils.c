@@ -171,14 +171,14 @@ int download_file(int fdin, int fdout, char *downloadFile, char *filename, char 
 			if (strncmp(buff, "{\"code\":0,\"message\":\"No Error\"}", 9) == 0)
 			{
 
-				fuse_log_error("Successfully downloaded %s\n", buff);
+				//fuse_log_error("Successfully downloaded %s\n", buff);
 				return 1;
 
 				return 1;
 			}
 			else if (strncmp(buff, "{\"code\":0,\"message\":\"No Error\"}", 1) == 0)
 			{
-				fuse_log_error("Unsuccessfully downloaded %s\n", buff);
+				//fuse_log_error("Unsuccessfully downloaded %s\n", buff);
 				return -1;
 			}
 		

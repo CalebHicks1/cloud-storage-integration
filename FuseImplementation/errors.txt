@@ -1,11 +1,11 @@
-Generated at: 2022-11-07 12:56:08
----------> [get_file] Could not find file /Google_Drive/cp.txt
----------> [do_getattr] Could not find file /Google_Drive/cp.txt
----------> [get_file] Could not find file /Google_Drive/cp.txt
----------> [do_getattr] Could not find file /Google_Drive/cp.txt
----------> [get_file] Could not find file /Google_Drive/cp.txt
----------> [do_getattr] Could not find file /Google_Drive/cp.txt
----------> [get_file] Could not find file /Google_Drive/cp.txt
----------> [Drive_delete] Could not find file /Google_Drive/cp.txt
+Generated at: 2022-11-07 23:42:30
+---------> [get_file] Could not find file /Google_Drive/myFolder/testread.txt
+---------> [do_getattr] Could not find file /Google_Drive/myFolder/testread.txt
+---------> [get_file] Could not find file /Google_Drive/myFolder/testread.txt
+---------> [do_getattr] Could not find file /Google_Drive/myFolder/testread.txt
+---------> [get_file] Could not find file /Google_Drive/myFolder/testread.txt
+---------> [do_getattr] Could not find file /Google_Drive/myFolder/testread.txt
+---------> [get_file] Could not find file /Google_Drive/myFolder/testread.txt
+---------> [Drive_delete] Could not find file /Google_Drive/myFolder/testread.txt
 ---------> [Drive_delete] Above error message is OK if called by Drive_insert
 ---------> [xmp_read] Open

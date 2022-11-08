@@ -195,6 +195,7 @@ int Drive_insert(int drive_index, char * path, json_t * file)
 	{
 		fuse_log("New file %s should be inserted in a subdirectory\n", path);
 		int res = SubDirectory_insert(get_result->subdirectory, file);
+		dump_subdirectory(get_result->subdirectory, 0);
 		return res;
 	}
 	else
@@ -223,7 +224,8 @@ int Drive_insert(int drive_index, char * path, json_t * file)
 					fuse_log_error("Generating subdirectory failed\n");
 					return -1;
 				}
-				return SubDirectory_insert(generated_subdir, file);
+				int ret = SubDirectory_insert(generated_subdir, file);
+				return ret;
 			}
 			else
 			{

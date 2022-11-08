@@ -417,9 +417,25 @@ static int xmp_rename(const char *from, const char *to /*, unsigned int flags */
 	// reflect changes in cache
 	res = rename(from_cache_path, to_cache_path);
 	fuse_log("renamed - from %s to %s \n", from_cache_path, to_cache_path);
-
+	
+	/*	Fix to bug */
+	//Naming the file with 'tolocal' gives the file the whole path as the name, which 
+	//includes the name of a subdirectory. We need to have just the name of the file
+	//Sorry to make what is probably more redundant, path modifying code xD
+	char * last_slash = tolocal;
+	char * ptr = tolocal;
+	while (*ptr != '\0')
+	{
+		if (*ptr == '/')
+		{
+			last_slash = ptr;
+		}
+		ptr++;
+	}
+	if (last_slash != tolocal)
+		last_slash++;
 	// Reflect changes in file directory
-	if (Drive_insert(to_drive_index, (char *)to, create_new_file(tolocal, false, size)) < 0)
+	if (Drive_insert(to_drive_index, (char *)to, create_new_file(last_slash, false, size)) < 0)
 	{
 		fuse_log_error("Could not insert new file\n");
 		res = -1;
@@ -434,7 +450,7 @@ static int xmp_rename(const char *from, const char *to /*, unsigned int flags */
 
 	return res;
 }
-
+// woo wuz here// // do not ctrl z this bo
 static struct fuse_operations operations = {
 	.getattr = do_getattr,
 	.readdir = do_readdir,
