@@ -109,6 +109,29 @@ int Drive_delete(char * path)
 			return -1;
 		}
 	}
+	else if (result->type == THIS && result->parent != NULL && result->subdirectory != NULL)
+	{
+		//We are deleting a subdirectory in a subdirectory
+		fuse_log("We are deleting a subdirectory in a subdirectory... what fun\n");
+		SubDirectory * parent = result->parent;
+		SubDirectory * child = result->subdirectory;
+		int removed_file = json_list_remove(&parent->FileList, file, parent->num_files);
+		if (removed_file < 0)
+		{
+			fuse_log_error("Could not remove file from subdirectory\n");
+			return -1;
+		}
+		parent->num_files--;
+		size_t start_size = list_size(&parent->subdirectories_list);
+		list_remove(&child->elem);
+		size_t end_size = list_size(&parent->subdirectories_list);
+		if (end_size != start_size - 1)
+		{
+			fuse_log_error("Did not remove child subdirectory from parent subdirectory's list\n");
+			return -1;
+		}
+		return 0;
+	}
 	else
 	{
 		fuse_log_error("Unexpected error\n");

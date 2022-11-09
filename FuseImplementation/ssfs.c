@@ -219,7 +219,7 @@ static int xmp_unlink(const char *path)
 	char *newDirName;
 	char *localPath = form_cache_path(path, true, &newDirName);
 
-	int res;
+	int res = 0;
 	if (access(localPath, F_OK) != -1)
 	{
 		res = unlink(localPath);
