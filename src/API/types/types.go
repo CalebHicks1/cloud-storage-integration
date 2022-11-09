@@ -17,9 +17,10 @@ type Command struct {
 
 // the valid file output for the API clients
 type File struct {
-	Name  string `json:"Name"`
-	IsDir bool   `json:"IsDir"`
-	Size  uint64 `json:"Size"`
+	Name     string `json:"Name"`
+	IsDir    bool   `json:"IsDir"`
+	Size     uint64 `json:"Size"`
+	Modified int64  `json:"Modified"`
 }
 
 // API client error codes
