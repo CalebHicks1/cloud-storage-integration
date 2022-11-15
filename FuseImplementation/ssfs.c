@@ -47,7 +47,7 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
 	{
 		{
-			"Google_Drive",
+			"Remote_Drives",
 			NULL,
 			//-1,
 			//-1,
@@ -56,9 +56,9 @@ struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
 			//"",
 			0,																										// Num Files
 			0,																										// Num Sub directories
-			1,																										// Num execs
-			{"../src/API/google_drive/google_drive_client", "../src/API/google_drive/google_drive_client", "", ""}, // execs
-			{"", "-token_file=secondary.json", "", ""},																// args
+			2,																									// Num execs
+			{"../src/API/google_drive/google_drive_client", "../src/API/dropbox/dropbox_client", "", ""}, // execs
+			{"", "", "", ""},																// args
 			{-1, -1, -1, -1},																						// in_fds
 			{-1, -1, -1, -1},																						// out_fds
 			{-1, -1, -1, -1},																						// pids
@@ -512,7 +512,7 @@ int main(int argc, char *argv[])
 	char *AbsoluteCachePathCpy = calloc(strlen(AbsoluteCachePath) + 11, sizeof(char));
 	AbsoluteCachePathCpy = memcpy(AbsoluteCachePathCpy, AbsoluteCachePath, strlen(AbsoluteCachePath) * sizeof(char));
 
-	CacheDeleteLogName = strcat(AbsoluteCachePathCpy, "delete.txt");
+	CacheDeleteLogName = strcat(AbsoluteCachePathCpy, ".delete.txt");
 	// fuse_log(AbsoluteCachePath);
 	//  dump_drive(&(Drives[0]));
 	//   To-Do:Catch Ctrl-c and kill processes
