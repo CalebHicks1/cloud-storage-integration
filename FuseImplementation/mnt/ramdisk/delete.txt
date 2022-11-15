@@ -1,0 +1,15 @@
+test1
+test1
+hi.txt
+hi.txt
+testread.txt
+testread.txt
+testread.txt
+mytest.txt
+testread.txt
+hi.txt
+testread.txt
+mytest
+mytestread.txt
+multitest
+mytest

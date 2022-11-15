@@ -123,7 +123,6 @@ json_t * Subdirectory_find_file(int drive_index, char * path)
 	}
 	if (folder->type == THIS)
 	{
-		fuse_log_error("searching here\n");
 		/** When we are trying to find a file that IS a subdirectory **/
 		/** ... then we need to search that subdirectories PARENT, not itself **/
 		if (folder->parent == NULL)
@@ -234,21 +233,17 @@ Get_Result * get_subdirectory(int drive_index, char * path)
 			result->subdirectory = find_subdirectory(&Drives[drive_index].subdirectories_list, *(tokens + 1));
 			if (result->subdirectory != NULL)
 			{
-				fuse_log("Successful!!!!!\n");
+				fuse_log("Successfully found subdirectory for %s\n", path);
 			}
 			else
 			{
-				result->subdirectory = NULL;
-				fuse_log_error("Failed....\n");
+				fuse_log("Failed to find subdirectory for %s\n", path);
 				
 			}
 			return result;
 		}
 		return result;
 	}
-	
-	//This is not at root level
-	fuse_log("Is not at root level\n");
 	//Find the first subdirectory in the path
 	char * first_name = *(tokens + 1);
 	//fuse_log("first_name: %s\n", first_name);
@@ -260,7 +255,6 @@ Get_Result * get_subdirectory(int drive_index, char * path)
 		return result;
 	}
 	else {
-		fuse_log("Found the first subdirectory!!!\n");
 		__get_subdirectory(result, first, tokens + 2, NULL);
 		return result;
 	}
@@ -299,8 +293,8 @@ int insert_subdirectory(int drive_index, SubDirectory * subdir)
 		return -1;
 		
 	}
-	fuse_log("dumping drive post insertion\n");
-	dump_drive(&(Drives[drive_index]));
+	//This is a good spot to check stuff:
+	//dump_drive(&(Drives[drive_index]));
 	return 0;
 	
 	
