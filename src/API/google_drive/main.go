@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 	"types"
 
 	"github.com/gabriel-vasile/mimetype"
@@ -25,11 +26,11 @@ import (
 // https://www.youtube.com/watch?v=OdyXIi6DGYw&ab_channel=AlexPliutau is better
 
 // Retrieve a token, saves the token, then returns the generated client.
-func getClient(config *oauth2.Config) *http.Client {
+func getClient(config *oauth2.Config, token_file_name string) *http.Client {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
 	// time.
-	tokFile := "token.json"
+	tokFile := token_file_name
 	tok, err := tokenFromFile(tokFile)
 	if err != nil {
 		tok = getTokenFromWeb(config)
@@ -88,6 +89,7 @@ type GoogleDriveClient struct {
 func main() {
 
 	debug := flag.Bool("debug", false, "prints successs statments for debugging")
+	tok_file := flag.String("token_file", "token.json", "file where google token is stored")
 	flag.Parse()
 
 	ctx := context.Background()
@@ -101,7 +103,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
-	httpClient := getClient(config)
+	httpClient := getClient(config, *tok_file)
 
 	srv, err := drive.NewService(ctx, option.WithHTTPClient(httpClient))
 	if err != nil {
@@ -126,7 +128,7 @@ func (c *GoogleDriveClient) GetFiles(path string) ([]types.File, *types.APIError
 	pageToken := ""
 	for {
 		// prepare a query that only gets file names in the given folder
-		q := c.Srv.Files.List().Q(fmt.Sprintf("parents in '%s' and trashed=false", folder.Id)).Fields("files(id, name, size, mimeType)")
+		q := c.Srv.Files.List().Q(fmt.Sprintf("parents in '%s' and trashed=false", folder.Id)).Fields("files(id, name, size, mimeType, modifiedTime)")
 		// If we have a pageToken set, apply it to the query
 		if pageToken != "" {
 			q = q.PageToken(pageToken)
@@ -140,7 +142,13 @@ func (c *GoogleDriveClient) GetFiles(path string) ([]types.File, *types.APIError
 
 		// append the files from the given page that was returned and get the next page token
 		for _, f := range r.Files {
-			fs = append(fs, types.File{Name: f.Name, IsDir: f.MimeType == "application/vnd.google-apps.folder", Size: uint64(f.Size)})
+
+			t, err := time.Parse(time.RFC3339, f.ModifiedTime)
+			if err != nil {
+				return nil, &types.APIError{Code: types.CLIENT_FAILED, Message: fmt.Sprintf("%s\n", err)}
+			}
+
+			fs = append(fs, types.File{Name: f.Name, IsDir: f.MimeType == "application/vnd.google-apps.folder", Size: uint64(f.Size), Modified: t.Unix()})
 		}
 		pageToken = r.NextPageToken
 
@@ -173,13 +181,6 @@ func (c *GoogleDriveClient) UploadFile(file, path string) *types.APIError {
 		return &types.APIError{Code: types.COMMAND_FAILED, Message: fmt.Sprintf("problem statting\n%s\n", err)}
 	}
 
-	// get the MIME type of our file
-	mimetype.SetLimit(0)
-	mType, err := mimetype.DetectFile(file)
-	if err != nil {
-		return &types.APIError{Code: types.COMMAND_FAILED, Message: fmt.Sprintf("problem detecting MIME type\n%s\n", err)}
-	}
-
 	// create the drive file to upload/update
 	driveFile := &drive.File{Name: fileInfo.Name()}
 
@@ -187,12 +188,24 @@ func (c *GoogleDriveClient) UploadFile(file, path string) *types.APIError {
 	res, err := c.Srv.Files.List().Q(fmt.Sprintf("name='%s' and parents in '%s' and trashed=false", fileInfo.Name(), parent.Id)).Fields("files(id, name, size, mimeType)").Do()
 	if err == nil && res != nil && res.Files != nil && len(res.Files) > 0 {
 		// attempt to update/overwrite the file (might have to add more at)
-		_, err = c.Srv.Files.Update(res.Files[0].Id, driveFile).Media(f).ProgressUpdater(func(now, size int64) { fmt.Fprintf(os.Stderr, "%d, %d\r", now, size) }).Do()
+		_, err = c.Srv.Files.Update(res.Files[0].Id, driveFile).Media(f).Do()
 	} else if err == nil {
 		// attempt to upload the file
 		driveFile.Parents = []string{parent.Id}
-		driveFile.MimeType = mType.String()
-		_, err = c.Srv.Files.Create(driveFile).Media(f).ProgressUpdater(func(now, size int64) { fmt.Fprintf(os.Stderr, "%d, %d\r", now, size) }).Do()
+		driveFile.MimeType = "application/vnd.google-apps.folder"
+
+		if !fileInfo.IsDir() {
+			// get the MIME type of our file
+			mimetype.SetLimit(0)
+			mType, err := mimetype.DetectFile(file)
+			if err != nil {
+				return &types.APIError{Code: types.COMMAND_FAILED, Message: fmt.Sprintf("problem detecting MIME type\n%s\n", err)}
+			}
+			driveFile.MimeType = mType.String()
+			_, err = c.Srv.Files.Create(driveFile).Media(f).Do()
+		} else {
+			_, err = c.Srv.Files.Create(driveFile).Do()
+		}
 	}
 
 	if err != nil {

@@ -53,9 +53,9 @@ func (c *DropBoxClient) GetFiles(path string) ([]types.File, *types.APIError) {
 	for _, entry := range res.Entries {
 		switch f := entry.(type) {
 		case *files.FileMetadata:
-			ret = append(ret, types.File{Name: f.Name, IsDir: false, Size: f.Size})
+			ret = append(ret, types.File{Name: f.Name, IsDir: false, Size: f.Size, Modified: f.ClientModified.Unix()})
 		case *files.FolderMetadata:
-			ret = append(ret, types.File{Name: f.Name, IsDir: true, Size: 0})
+			ret = append(ret, types.File{Name: f.Name, IsDir: true, Size: 0, Modified: 0})
 		}
 	}
 
