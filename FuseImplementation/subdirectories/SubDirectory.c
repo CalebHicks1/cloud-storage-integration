@@ -202,6 +202,14 @@ void __get_subdirectory(Get_Result * result, SubDirectory * dir, char ** tokens,
 	{
 		fuse_log("%s\n", *tokens);
 		fuse_log("element case\n");
+		if (*(tokens + 1) != NULL)
+		{
+			//The next subdirectory is null but...
+			//There is another directory in the path...
+			fuse_log("New case: this means the subdirectory we should get doesn't exist yet\n");
+			result->type = ERROR;
+			return;
+		}
 		result->type = ELEMENT;
 		result->subdirectory = dir;
 		return;
@@ -263,6 +271,16 @@ Get_Result * get_subdirectory(int drive_index, char * path)
 	
 	
 }
+extern char *AbsoluteCachePath;
+
+//Mimic the file tree in the cache - called in insert_subdirectory
+int insert_subdirectory_in_cache(SubDirectory * subdir)
+{
+	char * folder_path = calloc(sizeof(char), strlen(AbsoluteCachePath) + strlen(subdir->dirname) + 1);
+	strcat(folder_path, AbsoluteCachePath);
+	strcat(folder_path, subdir->dirname);
+	//int res = mkdir(folder_path ,S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+}
 
 
 /**
@@ -276,6 +294,7 @@ int insert_subdirectory(int drive_index, SubDirectory * subdir)
 	{
 		fuse_log("Inserting subdirectory %s into root directory\n", &(subdir->dirname[0]));
 		list_push_front(&(Drives[drive_index].subdirectories_list), &(subdir->elem));
+		//Drives[drive_index].num_files ++;
 	}
 	else if (result->type == THIS)
 	{
@@ -286,6 +305,7 @@ int insert_subdirectory(int drive_index, SubDirectory * subdir)
 	{
 		fuse_log("Going to insert %s into subdirectory %s\n", subdir->dirname, result->subdirectory->dirname);
 		list_push_front(&(result->subdirectory->subdirectories_list), &(subdir->elem));
+		//result->subdirectory->num_files++;
 	}
 	else if (result->type == ERROR)
 	{
@@ -295,6 +315,7 @@ int insert_subdirectory(int drive_index, SubDirectory * subdir)
 	}
 	//This is a good spot to check stuff:
 	//dump_drive(&(Drives[drive_index]));
+	insert_subdirectory_in_cache(subdir);
 	return 0;
 	
 	
