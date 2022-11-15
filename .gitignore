@@ -1,3 +1,5 @@
 FuseImplementation/jansson-2.13/*
 FuseImplementation/token.json
 src/API/ramdisk/ramdisk_client
+src/API/script.sh
+src/API/.vscode
