@@ -12,6 +12,7 @@
 #include "JsonTools.h"
 #include "list/list.h"
 #include "subdirectories/SubDirectory.h"
+#include "path_utils.h"
 
 #define LEN_DIRNAME 200
 #define LEN_EXEC_PATH 400
@@ -83,7 +84,8 @@ int get_drive_index(const char *path);
 char * parse_out_drive_name(char * path);
 int get_file_index(const char *path, int driveIndex);
 int kill_all_processes();
-
+char * filename_minus_path(char * path)
+;
 
 //Debug
 void dump_drive(Drive_Object * drive);
