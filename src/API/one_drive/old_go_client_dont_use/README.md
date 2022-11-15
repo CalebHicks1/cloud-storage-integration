@@ -1,0 +1,1 @@
+This is leftover code from when bgrohs tried to implement the OneDrive client in go. Read if you wish but know that it doesn't work and should not be used
