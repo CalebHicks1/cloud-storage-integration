@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
@@ -11,6 +12,12 @@ import (
 	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox/files"
 )
 
+/*
+
+Go OAuth2.0: https://www.example-code.com/golang/dropbox_oauth2_authorization.asp
+
+*/
+
 type DropBoxClient struct {
 	types.APIClient
 	Srv  files.Client
@@ -18,12 +25,27 @@ type DropBoxClient struct {
 }
 
 // TODO: switch to using OAuth2.0 (token expires very quickly)
-const TOKEN = "sl.BRaKUjPmUUcf7RuJoQmCnNbGi03CzevVOAAgK1cyh_fMbKI88dEDYWNj-L5kxQU9DMAULoxlm5UYfrMK23djUf-3Gk2RBpuDSH7vtikFgXJSVQR2NEOD0EvZh7ufgq81ucrJ6kymh2Ov"
+var TOKEN = "sl.BTwBL9mHs4BQvqCR4fAADh9vjk-X4swuY2H-1xXgnnsinurZXOLncsEyXDFlz7JKAjgC1Wl_cpuvnKYODFUr-cttAN7oRO0VHz2c7Q3sVDRhu_bb3RO57kYllYvCt3u4w0WQlAY3N09j"
+
+// OAuth credentials
+const APP_KEY = "ppbjb7aw7n67xpl"
+const APP_SECRET = "cr1505pqcbpttc0"
 
 func main() {
 
 	debug := flag.Bool("debug", false, "prints successs statments for debugging")
 	flag.Parse()
+
+	// read in OAuth2.0 token
+	f, err := os.Open("token.txt")
+	if err != nil {
+		panic(err)
+	}
+	scanner := bufio.NewScanner(f)
+	scanner.Split(bufio.ScanLines)
+	if scanner.Scan() {
+		TOKEN = scanner.Text()
+	}
 
 	config := dropbox.Config{
 		Token:    TOKEN,
