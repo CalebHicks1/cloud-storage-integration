@@ -79,7 +79,7 @@ SubDirectory * handle_subdirectory(char * path);
 
 //Interal helpers
 int is_drive(const char *path);
-struct Drive_Object *get_drive(const char *path);
+/*struct Drive_Object *get_drive(const char *path);*/
 int get_drive_index(const char *path);
 char * parse_out_drive_name(char * path);
 int get_file_index(const char *path, int driveIndex);

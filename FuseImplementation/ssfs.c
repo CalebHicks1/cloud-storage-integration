@@ -47,7 +47,7 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
 	{
 		{
-			"Remote_Drives",
+			"",
 			NULL,
 			//-1,
 			//-1,
@@ -56,8 +56,8 @@ struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
 			//"",
 			0,																										// Num Files
 			0,																										// Num Sub directories
-			2,																									// Num execs
-			{"../src/API/google_drive/google_drive_client", "../src/API/dropbox/dropbox_client", "", ""}, // execs
+			1,																									// Num execs
+			{"../src/API/google_drive/google_drive_client",/*"../src/API/dropbox/dropbox_client",*/ "", ""}, // execs
 			{"", "", "", ""},																// args
 			{-1, -1, -1, -1},																						// in_fds
 			{-1, -1, -1, -1},																						// out_fds
@@ -540,6 +540,7 @@ static int do_getattr(const char *path, struct stat *st)
 	if (is_drive(path) == 0)
 	{
 
+ fuse_log("is drive\n");
 		st->st_mode = S_IFDIR | 0755;
 		st->st_nlink = 2; // Why "two" hardlinks instead of "one"? The answer is here: http://unix.stackexchange.com/a/101536
 		return 0;
@@ -632,7 +633,7 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 	filler(buffer, "..", NULL, 0); // Parent Directory
 	if (is_drive(path) == 0)
 	{
-		int index = get_drive_index((char *)path);
+		int index = get_drive_index((char *)"");
 		if (index < 0)
 		{
 			fuse_log_error("Error in get_drive_index\n");
@@ -655,7 +656,7 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 
 		return 0;
 	}
-	else if (strcmp(path, "/") == 0) // If the user is trying to show the files/directories of the root directory show the following
+	/*else if (strcmp(path, "/") == 0) // If the user is trying to show the files/directories of the root directory show the following
 	{
 
 		// We want to list our drives
@@ -663,7 +664,7 @@ static int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, of
 		{
 			filler(buffer, Drives[i].dirname, NULL, 0);
 		}
-	}
+	}*/
 	else
 	{ // Then this *should* be a subdirectory
 		fuse_log("This should be a subdirectory: %s\n", path);
