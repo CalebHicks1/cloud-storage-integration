@@ -55,7 +55,6 @@ def delete_files():
         file_list = file_list + '"' + line[:-1] + '", '
         line = deleted.readline()
     file_list = file_list[:-2] + "]"
-    print(file_list)
 
     #Remove the deleted file to be ready for the next use
     deleted.close()
@@ -99,7 +98,7 @@ def get_file_list(drive, subdir):
 #Given a JSON array of files, remove the ones that were not recently modified and parse through all subdirectories
 def clean_file_list(drive, file_list):
 
-    file_list = [x for x in file_list if x['Modified'] > time.time() - WAIT_TIME]
+    file_list = [x for x in file_list if x['Modified'] > last_ran]
 
     files = []
     files.append(file_list)
@@ -107,7 +106,11 @@ def clean_file_list(drive, file_list):
     for directory in files:
         for cur_file in directory:
             if cur_file['IsDir']: 
-                print(cur_file)
+                #Create a local directory of the same name, remove it from the list, then get the file list
+                try:
+                    os.mkdir(path + cur_file['Name'][1:])
+                except:
+                    print("Directory already exists")
                 subdir = get_file_list(drive, cur_file['Name'])
                 if len(subdir) > 0:
                     files.append(subdir)
@@ -129,37 +132,41 @@ def push_local_changes(local_files, subdir):
         os.read(drive[4], 300).decode('utf-8')
 
 
-def sync_remote_drives(remote_filelists, local_filelist):
+def sync_remote_drives(remote_filelists):
     #Parse through each remote filelist
     #Download the files that were recently changed and add them to the list
-    downloaded = []
-    
-    time_breakpoint = time.time() - WAIT_TIME
+    downloaded = {}
     i = 0
 
-    for file_list in remote_filelists:
-        temp_file_list = []
-        temp_file_string = "["
-        for cur_file in file_list:
+    for drive in remote_filelists:
+        for file_list in drive:
+            temp_file_list = []
+            temp_file_string = "["
+            subdir = ""
+            #Get subdirectory
+            if len(file_list) > 0:
+                file = file_list[0]['Name']
+                subdir = file[1:file.rindex('/')]
+                if not subdir in downloaded:
+                    downloaded[subdir] = []
+                
+            for cur_file in file_list:
+                if not cur_file['IsDir']:
+                    print(cur_file['Name'])
+                    temp_file_list.append(cur_file['Name'])
+                    temp_file_string = temp_file_string + '"' + cur_file['Name'] + '", '
+            
+            #We have files recently modified so we need to download them
+            if len(temp_file_string) > 2:
+                temp_file_string = temp_file_string[:-2] + "]"
+                os.write(drives[i][3], bytes('{"command":"download","path":"' + path + subdir +'","files":' + temp_file_string + '}\n', 'utf-8'))
+                output = os.read(drives[i][4], 300).decode('utf-8')
+                print(output)
 
-            #If a file has been recently modified remotely and not recently modified locally, we want to download it to be synced
-            if cur_file['Modified'] > time_breakpoint and cur_file['Name'] not in local_filelist:
-                print(cur_file['Name'])
-                temp_file_list.append(cur_file['Name'])
-                temp_file_string = temp_file_string + '"' + cur_file['Name'] + '", '
-        
-        #We have files recently modified so we need to download them
-        if len(temp_file_string) > 2:
-            temp_file_string = temp_file_string[:-2] + "]"
-            os.write(drives[i][3], bytes('{"command":"download","path":"' + path + '","files":' + temp_file_string + '}\n', 'utf-8'))
-            output = os.read(drives[i][4], 300).decode('utf-8')
-
-            #Parse through the error response and make note of all files successfully downloaded so they can later be pushed out
-            for name in temp_file_list:
-                if not output.__contains__(name):
-                    downloaded.append(name)
-                    print("Could not download " + name)
-            print(temp_file_list)
+                #Parse through the error response and make note of all files successfully downloaded so they can later be pushed out
+                for name in temp_file_list:
+                    if not output.__contains__(name) and not name in downloaded[subdir]:
+                        downloaded[subdir].append(name)
         i += 1
     
     #At this point all files that were remotely modified have been downloaded and
@@ -170,18 +177,19 @@ def sync_remote_drives(remote_filelists, local_filelist):
         return
 
     #Format an upload string containing all files that were downloaded
-    upload_string = "["
-    for file_name in downloaded:
-        upload_string = upload_string + '"' + path + file_name + '", '
-    filenames = filenames[:-2] + "]"
+    for subdir in downloaded:
+        upload_string = "["
+        for file_name in downloaded[subdir]:
+            upload_string = upload_string + '"' + path + file_name + '", '
+        upload_string = upload_string[:-2] + "]"
 
-    #Upload this list of files to all remote drives
-    for drive in drives:
-        os.write(drive[3], bytes('{"command":"upload","path":"","files":' + upload_string + '}\n', 'utf-8'))
+        #Upload this list of files to all remote drives
+        for drive in drives:
+            os.write(drive[3], bytes('{"command":"upload","path":"","files":' + upload_string + '}\n', 'utf-8'))
 
-    #For now, just discarding output so it doesn't mess up later reads
-    for drive in drives:
-        os.read(drive[4], 300).decode('utf-8')
+        #For now, just discarding output so it doesn't mess up later reads
+        for drive in drives:
+            os.read(drive[4], 300).decode('utf-8')
 
     
 
@@ -202,6 +210,7 @@ def sigint_handler(signal, frame):
 def main():
 
     global drives
+    global last_ran
 
     signal.signal(signal.SIGINT, sigint_handler)
 
@@ -210,15 +219,14 @@ def main():
 
     while True:
 
-
         #Checks to ensure that FUSE is not touching the cache currently
 
         try : #If the lock file exists then FUSE is working, and we must wait
             lock = open(path + ".lock", "r")
             lock.close()
             print("Locked out")
-            time.sleep(5)
-            continue
+            #time.sleep(5)
+            #continue
         except : #If the lock file doesn't exist then we create it and continue our syncing
             lock = open(path + ".lock", "x")
             lock.close()
@@ -233,7 +241,7 @@ def main():
         local_files = []
         local_subdirectories = []
 
-        local_files.append([x for x in os.listdir(path) if os.path.getmtime(path + x) > time.time() - WAIT_TIME and x[0] != '.'])
+        local_files.append([x for x in os.listdir(path) if os.path.getmtime(path + x) > last_ran and x[0] != '.'])
         local_subdirectories.append("")
 
         #Parses through all subdirectories repeating this process until all locally modified files are logged
@@ -241,7 +249,7 @@ def main():
             for file_name in directory:
                 if os.path.isdir(path + file_name):
                     temp_path = path + file_name + "/"
-                    dir_list = [file_name + "/" + x for x in os.listdir(temp_path) if os.path.getmtime(temp_path + x) > time.time() - WAIT_TIME and x[0] != '.']
+                    dir_list = [file_name + "/" + x for x in os.listdir(temp_path) if os.path.getmtime(temp_path + x) > last_ran and x[0] != '.']
                     if len(dir_list) > 0:
                         local_files.append(dir_list)
                         local_subdirectories.append(file_name)
@@ -255,16 +263,16 @@ def main():
             remote_filelists.append(all_files)
         
         #Just for testing, will be removed eventually
-        print(local_files)
-        print(local_subdirectories)
+        #print(local_files)
+        #print(local_subdirectories)
         print(remote_filelists)
 
         #At this point we have a list of all local files which have been modified in 'files', 
         #and a list of files from each drive all stored in 'remote_filelists'
 
         #Sync the remote drives with each other first so that local changes have priority
-        #if remote_filelists:
-            #sync_remote_drives(remote_filelists, local_files)
+        if remote_filelists:
+            sync_remote_drives(remote_filelists)
 
 
         #Push out all locally modified files
@@ -279,6 +287,7 @@ def main():
 
         #Removes the lock file so FUSE can resume, and sleeps for the specified wait time before running again
         os.remove(path + ".lock")
+        last_ran = time.time()
         time.sleep(WAIT_TIME)
 
 
@@ -287,6 +296,8 @@ path = "/home/ubuntu/cache_dir/"
 
 #Current wait time between runs is 5 minutes, or 300 seconds
 WAIT_TIME = 300
+
+last_ran = 0
 
 #Name of drive, drive executable, path to drive executable, to_api filedescriptor, from_api file descriptor
 drives = [
