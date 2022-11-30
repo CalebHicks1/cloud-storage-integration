@@ -64,10 +64,6 @@ def delete_files():
     for drive in drives:
         os.write(drive[3], bytes('{"command":"delete","path":"","files":' + file_list + '}\n', 'utf-8'))
         print(os.read(drive[4], 100).decode('utf-8'))
-
-    # TODO --- Not sure if we should wait for output here, I think drives will only write something on an error 
-    # but if a file doesn't exist that would be an error.
-    # And error data sitting in the pipe could mess up getting the remote filelists
     
 
 
@@ -143,6 +139,7 @@ def sync_remote_drives(remote_filelists):
             temp_file_list = []
             temp_file_string = "["
             subdir = ""
+            nested_subdirs = []
             #Get subdirectory
             if len(file_list) > 0:
                 file = file_list[0]['Name']
@@ -152,16 +149,21 @@ def sync_remote_drives(remote_filelists):
                 
             for cur_file in file_list:
                 if not cur_file['IsDir']:
-                    print(cur_file['Name'])
                     temp_file_list.append(cur_file['Name'])
                     temp_file_string = temp_file_string + '"' + cur_file['Name'] + '", '
+                else:
+                    nested_subdirs.append(cur_file['Name'][1:])
+            
+            #We have to separately track the subdirectories to upload them because they are created locally, not downloaded
+            for dir_name in nested_subdirs:
+                downloaded[subdir].append(dir_name)
             
             #We have files recently modified so we need to download them
             if len(temp_file_string) > 2:
                 temp_file_string = temp_file_string[:-2] + "]"
                 os.write(drives[i][3], bytes('{"command":"download","path":"' + path + subdir +'","files":' + temp_file_string + '}\n', 'utf-8'))
                 output = os.read(drives[i][4], 300).decode('utf-8')
-                print(output)
+                print("Downloading output: " +output)
 
                 #Parse through the error response and make note of all files successfully downloaded so they can later be pushed out
                 for name in temp_file_list:
@@ -185,11 +187,11 @@ def sync_remote_drives(remote_filelists):
 
         #Upload this list of files to all remote drives
         for drive in drives:
-            os.write(drive[3], bytes('{"command":"upload","path":"","files":' + upload_string + '}\n', 'utf-8'))
+            os.write(drive[3], bytes('{"command":"upload","path":"' + subdir + '","files":' + upload_string + '}\n', 'utf-8'))
 
         #For now, just discarding output so it doesn't mess up later reads
         for drive in drives:
-            os.read(drive[4], 300).decode('utf-8')
+            print("Uploading output: " + os.read(drive[4], 300).decode('utf-8'))
 
     
 
@@ -270,16 +272,18 @@ def main():
         #At this point we have a list of all local files which have been modified in 'files', 
         #and a list of files from each drive all stored in 'remote_filelists'
 
-        #Sync the remote drives with each other first so that local changes have priority
-        if remote_filelists:
-            sync_remote_drives(remote_filelists)
-
-
-        #Push out all locally modified files
+        #Push out all locally modified files so they take precedence and aren't overwritten by syncing
         i = 0
         for directory in local_files:
             push_local_changes(directory, local_subdirectories[i])
             i = i + 1
+
+        #Sync the remote drives with each other first so that local changes have priority
+        if remote_filelists:
+            sync_remote_drives(remote_filelists)
+
+        
+        
         print("Done pushing")
 
         #Parses the .delete file and deletes all files listed
