@@ -114,13 +114,13 @@ def clean_file_list(drive, file_list):
 
 
 def push_local_changes(local_files, subdir):
-    #Formats a JSON string containing the local files that need to be pushed out
+    #Formats a JSON string containing the local files of a given directory that need to be pushed out
     filenames = "["
     for cur_file in local_files:
         filenames = filenames + '"' + path + cur_file + '", '
     filenames = filenames[:-2] + "]"
 
-    #Loops through and writes local files to all remote drives
+    #Loops through and writes the specified directory to all remote drives
     for drive in drives:
         os.write(drive[3], bytes('{"command":"upload","path":"' + subdir + '","files":' + filenames + '}\n', 'utf-8'))
 
@@ -136,10 +136,13 @@ def sync_remote_drives(remote_filelists):
 
     for drive in remote_filelists:
         for file_list in drive:
+
+            #Initialize all variables needed for this iteration
             temp_file_list = []
             temp_file_string = "["
             subdir = ""
             nested_subdirs = []
+
             #Get subdirectory
             if len(file_list) > 0:
                 file = file_list[0]['Name']
@@ -147,6 +150,7 @@ def sync_remote_drives(remote_filelists):
                 if not subdir in downloaded:
                     downloaded[subdir] = []
                 
+            #Format the download string from all files within this directory, excluding subdirectories
             for cur_file in file_list:
                 if not cur_file['IsDir']:
                     temp_file_list.append(cur_file['Name'])
@@ -178,8 +182,10 @@ def sync_remote_drives(remote_filelists):
     if len(downloaded) == 0:
         return
 
-    #Format an upload string containing all files that were downloaded
+    #Send a separate upload for each subdirectory so structure is maintained
     for subdir in downloaded:
+        
+        #Format an upload string containing all files that were downloaded
         upload_string = "["
         for file_name in downloaded[subdir]:
             upload_string = upload_string + '"' + path + file_name + '", '
@@ -227,8 +233,8 @@ def main():
             lock = open(path + ".lock", "r")
             lock.close()
             print("Locked out")
-            #time.sleep(5)
-            #continue
+            time.sleep(5)
+            continue
         except : #If the lock file doesn't exist then we create it and continue our syncing
             lock = open(path + ".lock", "x")
             lock.close()
@@ -263,11 +269,6 @@ def main():
             json = get_file_list(drive, "")
             all_files = clean_file_list(drive, json)
             remote_filelists.append(all_files)
-        
-        #Just for testing, will be removed eventually
-        #print(local_files)
-        #print(local_subdirectories)
-        print(remote_filelists)
 
         #At this point we have a list of all local files which have been modified in 'files', 
         #and a list of files from each drive all stored in 'remote_filelists'
@@ -301,12 +302,13 @@ path = "/home/ubuntu/cache_dir/"
 #Current wait time between runs is 5 minutes, or 300 seconds
 WAIT_TIME = 300
 
+#Keeps track of the last time the daemon was ran, starts at 0 to sync all files on the first run
 last_ran = 0
 
 #Name of drive, drive executable, path to drive executable, to_api filedescriptor, from_api file descriptor
 drives = [
     ["google_drive", "./google_drive_client", "../src/API/google_drive/", -1, -1], 
-    #["dropbox", "", "../src/API/dropbox/", -1, -1]
+    ["dropbox", "./dropbox_client", "../src/API/dropbox/", -1, -1]
     ]
 
 
