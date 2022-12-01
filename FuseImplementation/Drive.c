@@ -4,9 +4,11 @@
 //#include "ssfs.h"
 #include "api.h"
 #include "MultiList.h"
+#include "cache_utils.h"
 extern Drive_Object Drives[NUM_DRIVES];
-
+extern char *AbsoluteCachePath;
 #define BASH
+
 
 void dump_file_descriptors(Drive_Object * drive)
 {
@@ -50,9 +52,12 @@ void dump_drive(Drive_Object * drive)
 	
 }
 
+
+
 //Path is the absolute path
 int Drive_delete(char * path)
 {
+	fuse_log("Called for %s\n", path);
 	int drive_index = get_drive_index(path);
 	if (drive_index < 0)
 	{
@@ -104,11 +109,77 @@ int Drive_delete(char * path)
 			return -1;
 		}
 	}
+	else if (result->type == THIS && result->parent != NULL && result->subdirectory != NULL)
+	{
+		//We are deleting a subdirectory in a subdirectory
+		fuse_log("We are deleting a subdirectory in a subdirectory... what fun\n");
+		SubDirectory * parent = result->parent;
+		SubDirectory * child = result->subdirectory;
+		int removed_file = json_list_remove(&parent->FileList, file, parent->num_files);
+		if (removed_file < 0)
+		{
+			fuse_log_error("Could not remove file from subdirectory\n");
+			return -1;
+		}
+		parent->num_files--;
+		size_t start_size = list_size(&parent->subdirectories_list);
+		list_remove(&child->elem);
+		size_t end_size = list_size(&parent->subdirectories_list);
+		if (end_size != start_size - 1)
+		{
+			fuse_log_error("Did not remove child subdirectory from parent subdirectory's list\n");
+			return -1;
+		}
+		return 0;
+	}
 	else
 	{
 		fuse_log_error("Unexpected error\n");
 		return -1;
 	}
+}
+
+char * path_minus_filename(char * path)
+{
+	char * ptr = path;
+	char * last_slash = NULL;
+	while (*ptr != '\0')
+	{
+		if (*ptr == '/')
+			last_slash = ptr;
+		ptr++;
+	}
+	if (last_slash == NULL)
+	{
+		fuse_log_error("Found no slashes in file path %s\n", path);
+		return NULL;
+	}
+	int new_length = strlen(path) - strlen(last_slash);
+	char * res = calloc(sizeof(char*), new_length + 1);
+	memcpy(res, path, new_length);
+	return res;
+}
+
+char * filename_minus_path(char * path)
+{
+	char * ptr = path;
+	char * last_slash = NULL;
+	while (*ptr != '\0')
+	{
+		if (*ptr == '/')
+			last_slash = ptr;
+		ptr++;
+	}
+	if (last_slash == NULL)
+	{
+		fuse_log_error("Found no slashes in file path %s\n", path);
+		return NULL;
+	}
+	last_slash++;
+	int new_length = strlen(last_slash);
+	char * res = calloc(sizeof(char*), new_length + 1);
+	memcpy(res, last_slash, new_length);
+	return res;
 }
 
 /**
@@ -147,11 +218,44 @@ int Drive_insert(int drive_index, char * path, json_t * file)
 	{
 		fuse_log("New file %s should be inserted in a subdirectory\n", path);
 		int res = SubDirectory_insert(get_result->subdirectory, file);
+		dump_subdirectory(get_result->subdirectory, 0);
 		return res;
 	}
 	else
 	{
+		//This is for when we try to move a file into a subdirectory we 
+		//have not populated yet
 		fuse_log_error("Cannot find location to put new file %s\n", path);
+		fuse_log("Lets see if there's a subdirectory to put it in that doesn't exist yet\n");
+		//char * path_minus_name = parse_out_drive_name(path);
+		char * path_minus_name = strip_filename_from_directory(path);
+		json_t * subdir = get_file(get_drive_index(path_minus_name), path_minus_name);
+		//char * name = getJsonFileName(subdir);
+		if (subdir == NULL)
+		{
+			fuse_log_error("Directory to put file in does not exist");
+		}
+		json_t *isDir = json_object_get(subdir, "IsDir");
+		if (isDir != NULL)
+		{
+			if (json_is_true(isDir))
+			{
+				fuse_log("Is directory!\n");
+				SubDirectory * generated_subdir = handle_subdirectory(path_minus_name);
+				if (generated_subdir == NULL)
+				{
+					fuse_log_error("Generating subdirectory failed\n");
+					return -1;
+				}
+				int ret = SubDirectory_insert(generated_subdir, file);
+				return ret;
+			}
+			else
+			{
+				fuse_log_error("%s is not a folder\n", path_minus_name);
+				return -1;
+			}
+		}
 		return -1;
 	}
 	
@@ -320,6 +424,8 @@ SubDirectory *handle_subdirectory(char *path)
 	SubDirectory * new = SubDirectory_create(path);
 	//Insert subdirectory
 	insert_subdirectory(drive_index, new);
+
+	add_subdirectory_to_cache(path);
 	//Insert files 
 	fuse_log("Getting files for new subdirectory structure: %s\n", path);
 	new->num_files = get_subdirectory_contents(&(new->FileList), drive_index, relative_path);
