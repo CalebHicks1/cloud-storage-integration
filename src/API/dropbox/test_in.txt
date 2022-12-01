@@ -1,4 +1,5 @@
 {"command":"list","path":"","files":[]}
+{"command":"shutdown","path":"","files":[]}
 {"command":"upload","path":"/Main","files":["hello.txt"]}
 {"command":"upload","path":"/Main/","files":["bye.txt"]}
 {"command":"list","path":"Main/","files":[]}
