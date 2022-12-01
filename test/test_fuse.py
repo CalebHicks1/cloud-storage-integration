@@ -78,7 +78,7 @@ def test_delete():
     4. check that file is added to .delete file
     """
     # delete delete.txt file in cache
-    output("rm mnt/ramdisk/delete.txt")
+    output("rm mnt/ramdisk/.delete.txt")
     run_test(
         f"echo test > {FUSE_MOUNT_POINT}/unit_test_delete",
         ""
