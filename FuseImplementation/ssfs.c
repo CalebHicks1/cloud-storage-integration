@@ -56,8 +56,8 @@ struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
 			//"",
 			0,																										// Num Files
 			0,																										// Num Sub directories
-			1,																									// Num execs
-			{"../src/API/google_drive/google_drive_client",/*"../src/API/dropbox/dropbox_client",*/ "", ""}, // execs
+			2,																									// Num execs
+			{"../src/API/google_drive/google_drive_client","../src/API/dropbox/drop_box", "", ""}, // execs
 			{"", "", "", ""},																// args
 			{-1, -1, -1, -1},																						// in_fds
 			{-1, -1, -1, -1},																						// out_fds
@@ -241,6 +241,7 @@ static int xmp_create(const char *path, mode_t mode,
 {
 	fuse_log("create\n");
 	int res;
+
 
 	// char *pathcpy = strdup(path);
 	char *pathBuffer;
@@ -580,6 +581,7 @@ static int do_getattr(const char *path, struct stat *st)
 		st->st_nlink = 1;
 
 		json_t *size = json_object_get(file, "Size");
+		
 
 		if (size != NULL)
 			st->st_size = (int)json_integer_value(size);
@@ -589,6 +591,7 @@ static int do_getattr(const char *path, struct stat *st)
 		st->st_uid = getuid();	   // The owner of the file/directory is the user who mounted the filesystem
 		st->st_gid = getgid();	   // The group of the file/directory is the same as the group of the user who mounted the filesystem
 		st->st_atime = time(NULL); // The last "a"ccess of the file/directory is right now
+		
 		st->st_mtime = time(NULL); // The last "m"odification of the file/directory is right now
 
 		return 0;
