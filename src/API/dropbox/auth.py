@@ -5,6 +5,10 @@ import dropbox
 from dropbox import DropboxOAuth2FlowNoRedirect
 #from dropbox import DropboxOAuth2Flow
 
+'''
+When running, delete 'token.txt' if token is expired and run again
+'''
+
 # old exmaple: https://www.dropboxforum.com/t5/Dropbox-API-Support-Feedback/Python-sdk-error-DropboxAuth2Flow/td-p/257284
 
 # dropbox docs: https://dropbox-sdk-python.readthedocs.io/en/latest/
