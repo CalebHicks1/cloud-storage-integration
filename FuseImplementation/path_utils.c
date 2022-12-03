@@ -1,5 +1,6 @@
 #include "path_utils.h"
 extern char *AbsoluteCachePath;
+
 /**
  * Builds the absolute path to directory, if stripRoot = true, the
  * root directory is removed from the path before the absolute path

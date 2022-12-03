@@ -5,6 +5,33 @@
 extern const char *CacheFile;
 extern Drive_Object Drives[NUM_DRIVES];
 extern char *AbsoluteCachePath;
+extern char *AbsoluteLockPath;
+
+void wait_for_lock(){
+	FILE *fPtr;
+	fuse_log("wait for locl - %s\n", AbsoluteLockPath);
+	struct stat buffer;
+    int exist;
+	
+	while((exist = stat(AbsoluteLockPath, &buffer)) == 0)
+	{
+		fuse_log("in while\n");
+
+	}
+	fPtr = fopen(AbsoluteLockPath, "w");
+	fclose(fPtr);
+}
+
+void delete_lock(){
+	FILE *fPtr;
+	fuse_log("delete for locl - %s\n", AbsoluteLockPath);
+	if ((fPtr = fopen(AbsoluteLockPath, "r")) != NULL)
+	{
+		remove(AbsoluteLockPath);
+		fclose(fPtr);
+	}
+	
+}
 //char * cache_location;
 
 // char * assemble_cache_path(char *path)

@@ -72,6 +72,7 @@ struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
 const char *CacheFile = "/mnt/ramdisk/";
 const char *AbsoluteCachePath;
 const char *CacheDeleteLogName;
+const char *AbsoluteLockPath;
 
 /**********************************************************/
 
@@ -117,6 +118,7 @@ static int xmp_mkdir(const char *path, mode_t mode)
 
 	int drive_index = get_drive_index(path);
 
+	wait_for_lock();
 	char *localPath = form_cache_path(path, true, &newDirName);
 	fuse_log(localPath);
 	// char *localPath = strcat(cachePath, newDirName);
@@ -130,7 +132,7 @@ static int xmp_mkdir(const char *path, mode_t mode)
 		//(check error code?)
 		fuse_log_error("Could not do mkdir in cache for %s\n", localPath);
 	}
-
+	delete_lock();
 	// Add new directory tofile tree
 	SubDirectory *newSub = SubDirectory_create((char *)path);
 	newSub->FileList = json_array();
@@ -196,7 +198,7 @@ static int xmp_rmdir(const char *path)
 	// char *pathcpy = strdup(path);
 
 	char *newDirName;
-
+	wait_for_lock();
 	// int drive_index = get_drive_index(pathBuffer);
 	char *localPath = form_cache_path(path, true, &newDirName);
 
@@ -205,6 +207,7 @@ static int xmp_rmdir(const char *path)
 
 	addPathToDeleteLog(CacheDeleteLogName, newDirName);
 
+	delete_lock();
 	Drive_delete((char *)path);
 
 	return res;
@@ -217,7 +220,9 @@ static int xmp_unlink(const char *path)
 	// char *pathcpy = strdup(path);
 
 	char *newDirName;
+	wait_for_lock();
 	char *localPath = form_cache_path(path, true, &newDirName);
+	fuse_log("cache path - %s \n", localPath);
 
 	int res = 0;
 	if (access(localPath, F_OK) != -1)
@@ -227,6 +232,7 @@ static int xmp_unlink(const char *path)
 
 	addPathToDeleteLog(CacheDeleteLogName, newDirName);
 
+	delete_lock();
 	Drive_delete((char *)path);
 	return res;
 }
@@ -264,6 +270,7 @@ static int xmp_create(const char *path, mode_t mode,
 		return -errno;
 	}
 
+	wait_for_lock();
 	char *filePath = form_cache_path(filename, false, NULL);
 
 	if (access(filePath, F_OK) == -1)
@@ -271,9 +278,11 @@ static int xmp_create(const char *path, mode_t mode,
 		int fd = open(filePath, O_CREAT);
 
 		close(fd);
+		delete_lock();
 		return 0;
 	}
 
+	delete_lock();
 	// Create file with fopen
 
 	return -1;
@@ -333,6 +342,7 @@ static int xmp_truncate(const char *path, off_t size)
 	char *filename;
 	split_path_file(&pathBuffer, &filename, path);
 
+	wait_for_lock();
 	char *fullFileName = form_cache_path(filename, false, NULL); // strcat(writeFilePathLocal, filename);
 	int res;
 
@@ -360,6 +370,7 @@ static int xmp_truncate(const char *path, off_t size)
 		fuse_log_error("Truncate failed %d", errno);
 	}
 
+	delete_lock();
 	return 0;
 }
 
@@ -383,6 +394,8 @@ static int xmp_rename(const char *from, const char *to /*, unsigned int flags */
 
 	int to_drive_index = get_drive_index(to);
 	char *tolocal;
+
+	wait_for_lock();
 	char *to_cache_path = form_cache_path(to, true, &tolocal);
 
 	// char *pathcpy = strdup(path);
@@ -448,7 +461,7 @@ static int xmp_rename(const char *from, const char *to /*, unsigned int flags */
 	}
 
 	addPathToDeleteLog(CacheDeleteLogName, from_filename);
-
+	delete_lock();
 	return res;
 }
 // woo wuz here// // do not ctrl z this bo
@@ -514,6 +527,10 @@ int main(int argc, char *argv[])
 	AbsoluteCachePathCpy = memcpy(AbsoluteCachePathCpy, AbsoluteCachePath, strlen(AbsoluteCachePath) * sizeof(char));
 
 	CacheDeleteLogName = strcat(AbsoluteCachePathCpy, ".delete.txt");
+
+	char *AbsoluteCachePathCpy2 = calloc(strlen(AbsoluteCachePath) + 6, sizeof(char));
+	AbsoluteCachePathCpy2 = memcpy(AbsoluteCachePathCpy2, AbsoluteCachePath, strlen(AbsoluteCachePath) * sizeof(char));
+	AbsoluteLockPath= strcat(AbsoluteCachePathCpy2, ".lock");
 	// fuse_log(AbsoluteCachePath);
 	//  dump_drive(&(Drives[0]));
 	//   To-Do:Catch Ctrl-c and kill processes
@@ -541,7 +558,7 @@ static int do_getattr(const char *path, struct stat *st)
 	if (is_drive(path) == 0)
 	{
 
- fuse_log("is drive\n");
+ //fuse_log("is drive\n");
 		st->st_mode = S_IFDIR | 0755;
 		st->st_nlink = 2; // Why "two" hardlinks instead of "one"? The answer is here: http://unix.stackexchange.com/a/101536
 		return 0;
@@ -765,6 +782,8 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		return -1;
 	}
 
+	wait_for_lock();
+
 	char *downloadFile = strcat(cwd, CacheFile);
 
 	/*char *pathBuffe;
@@ -780,10 +799,12 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		if (cache_find_or_download(&cachePath, (char *)path) == 0)
 		{
 			int res = xmp_read(cachePath, buffer, size, offset, fi);
-			fuse_log("Result %d \n", res);
+		//	fuse_log("Result %d \n", res);
+		delete_lock();
 			return res;
 		}
 		fuse_log_error("Failed to retrieve or download %s\n", path);
+		delete_lock();
 		return -1;
 	}
 
@@ -794,34 +815,19 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		fuse_log_error("File does not exist\n");
 	}*/
 
+	delete_lock();
 	return 0;
 }
 
 static int do_write(const char *path, const char *buffer, size_t size, off_t offset, struct fuse_file_info *fi)
 {
 	fuse_log("--> Trying to write %s, %lu, %lu\n", path, offset, size);
-	/*
-		char cwd[512];
-		if (getcwd(cwd, sizeof(cwd)) == NULL)
-		{
-			fuse_log_error("getcwd() error");
-			return -1;
-		}
-
-		char cwd1[512];
-		if (getcwd(cwd1, sizeof(cwd1)) == NULL)
-		{
-			fuse_log_error("getcwd() error");
-			return -1;
-		}*/
-	//	char *writeFilePathLocal = strcat(cwd, CacheFile);
-
-	// char *cachePaths = strcat(cwd1, CacheFile);
-
+	
 	char *pathBuffer;
 	char *filename;
 	split_path_file(&pathBuffer, &filename, path);
 
+	wait_for_lock();
 	char *fullFileName = form_cache_path(path, true, NULL);
 
 	// char *fullFileName = strcat(writeFilePathLocal, filename);
@@ -847,15 +853,19 @@ static int do_write(const char *path, const char *buffer, size_t size, off_t off
 			}
 			int file_index = get_file_index(path, index);
 			json_array_set(Drives[index].FileList, file_index, create_new_file(filename, false, size));
+			delete_lock();
 			return i;
 		}
 
 		fuse_log_error("Failed to retrieve or download %s\n", path);
+		delete_lock();
 		return -1;
 
 		// dump_drive(&Drives[index]);
 	}
 	fuse_log_error("Error in get_drive_index\n");
+	delete_lock();
+	return -1;
 }
 
 static int xmp_write(const char *path, const char *buf, size_t size,

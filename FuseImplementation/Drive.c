@@ -271,7 +271,7 @@ json_t *get_file(int drive_index, char *path)
 {
 	// Check FileList
 	int file_index = get_file_index(path, drive_index);
-	fuse_log("%d file index\n", file_index);
+	//fuse_log("%d file index\n", file_index);
 	if (file_index > -1)
 	{
 		return json_array_get(Drives[drive_index].FileList, file_index);
@@ -454,16 +454,16 @@ int listAsArray(json_t **list, struct Drive_Object * drive, char *optional_path)
 /* CHANGED*/
 int is_drive(const char *path)
 {
-	fuse_log(path);
+	//fuse_log(path);
 	for (int i = 0; i < NUM_DRIVES; i++)
 	{
 		if (strcmp("", path + 1) == 0)
 		{
-			fuse_log("\n is drive \n");
+			//fuse_log("\n is drive \n");
 			return 0;
 		}
 	}
-	fuse_log("\n not drive \n");
+	//fuse_log("\n not drive \n");
 	return -1;
 }
 /**
@@ -491,17 +491,17 @@ int is_drive(const char *path)
  */
 int get_drive_index(const char *path)
 {
- fuse_log("%s - path\n", path);
+ //fuse_log("%s - path\n", path);
 	for (int i = 0; i < NUM_DRIVES; i++)
 	{
 		if (strncmp(path + 1, Drives[i].dirname, strlen(Drives[i].dirname)) == 0)
 		{
 
-fuse_log("found \n");
+//fuse_log("found \n");
 			return i;
 		}
 	}
-	fuse_log("fail \n");
+	//fuse_log("fail \n");
 	return -1;
 }
 
@@ -525,9 +525,9 @@ char *parse_out_drive_name(char *path)
  */
 int get_file_index(const char *path, int driveIndex)
 {
-	fuse_log("Before cut: %s", path);
+	//fuse_log("Before cut: %s", path);
 	char *cut_path = parse_out_drive_name((char *)path);
-	fuse_log("after cut: %s", cut_path);
+	//fuse_log("after cut: %s", cut_path);
 	for (size_t index = 0; index < Drives[driveIndex].num_files; index++)
 	{
 		const char *fileName = getJsonFileName(json_array_get(Drives[driveIndex].FileList, index));
