@@ -94,7 +94,7 @@ def get_file_list(drive, subdir):
 #Given a JSON array of files, remove the ones that were not recently modified and parse through all subdirectories
 def clean_file_list(drive, file_list):
 
-    file_list = [x for x in file_list if x['Modified'] > (last_ran - 10)]
+    file_list = [x for x in file_list if x['Modified'] > last_ran]
 
     files = []
     files.append(file_list)
@@ -245,15 +245,11 @@ def main():
         #Creates a list of filenames and the time they were last modified from the given directory
         #Currently only includes files modified after the most recent run 
         #Also excludes files starting with a '.' to avoid uploading the .delete and .lock files
-    
+
         local_files = []
         local_subdirectories = []
 
-        local_files.append([x for x in os.listdir(path) if os.path.getatime(path + x) > (last_ran - 10) and x[0] != '.'])
-        print(last_ran - 10)
-        for x in os.listdir(path):
-            print( os.path.getatime(path + x) )
-            print(x)
+        local_files.append([x for x in os.listdir(path) if os.path.getmtime(path + x) > last_ran and x[0] != '.'])
         local_subdirectories.append("")
 
         #Parses through all subdirectories repeating this process until all locally modified files are logged
@@ -261,7 +257,7 @@ def main():
             for file_name in directory:
                 if os.path.isdir(path + file_name):
                     temp_path = path + file_name + "/"
-                    dir_list = [file_name + "/" + x for x in os.listdir(temp_path) if os.path.getatime(temp_path + x) > (last_ran - 10) and x[0] != '.']
+                    dir_list = [file_name + "/" + x for x in os.listdir(temp_path) if os.path.getmtime(temp_path + x) > last_ran and x[0] != '.']
                     if len(dir_list) > 0:
                         local_files.append(dir_list)
                         local_subdirectories.append(file_name)
@@ -295,10 +291,8 @@ def main():
         delete_files()
 
         #Removes the lock file so FUSE can resume, and sleeps for the specified wait time before running again
-       
-        last_ran = time.time()
         os.remove(path + ".lock")
-       
+        last_ran = time.time()
         time.sleep(WAIT_TIME)
 
 
@@ -311,10 +305,16 @@ WAIT_TIME = 20
 #Keeps track of the last time the daemon was ran, starts at 0 to sync all files on the first run
 last_ran = 0
 
+#Current wait time between runs is 5 minutes, or 300 seconds
+WAIT_TIME = 300
+
+#Keeps track of the last time the daemon was ran, starts at 0 to sync all files on the first run
+last_ran = 0
+
 #Name of drive, drive executable, path to drive executable, to_api filedescriptor, from_api file descriptor
 drives = [
     ["google_drive", "./google_drive_client", "../src/API/google_drive/", -1, -1], 
-    ["dropbox", "./drop_box", "../src/API/dropbox/", -1, -1]
+    ["dropbox", "./dropbox_client", "../src/API/dropbox/", -1, -1]
     ]
 
 

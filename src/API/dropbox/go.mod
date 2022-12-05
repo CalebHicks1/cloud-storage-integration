@@ -2,10 +2,12 @@ module drop_box
 
 go 1.18
 
-require types v1.0.0
+require (
+	github.com/dropbox/dropbox-sdk-go-unofficial/v6 v6.0.5
+	types v1.0.0
+)
 
 require (
-	github.com/dropbox/dropbox-sdk-go-unofficial/v6 v6.0.5 // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
 	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
 	golang.org/x/oauth2 v0.0.0-20201208152858-08078c50e5b5 // indirect
