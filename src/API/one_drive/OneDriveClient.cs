@@ -7,20 +7,46 @@ namespace OneDrive;
 
 public class OneDriveClient : APIClient
 {
+    private const string TOKEN_CACHE_NAME = "OneDriveTokenCache";
+    private const string AUTH_RECORD_PATH = "token.json";
     private GraphServiceClient _client;
 
     public OneDriveClient(OneDriveConfig config)
     {
-        // Setup graph client
-        var options = new InteractiveBrowserCredentialOptions()
+        // Adapted from: https://learn.microsoft.com/en-us/dotnet/api/azure.identity.tokencachepersistenceoptions?view=azure-dotnet
+        var options = new InteractiveBrowserCredentialOptions
         {
             ClientId = config.ClientId,
             TenantId = config.TenantId,
             RedirectUri = new Uri(config.RedirectUri),
+            TokenCachePersistenceOptions = new TokenCachePersistenceOptions
+            {
+                Name = TOKEN_CACHE_NAME,
+                UnsafeAllowUnencryptedStorage = true
+            }
         };
-        var cred = new InteractiveBrowserCredential(options);
-        _client = new GraphServiceClient(cred, config.Scopes);
 
+        // Check if an AuthenticationRecord exists on disk.
+        AuthenticationRecord authRecord;
+        InteractiveBrowserCredential credential;
+        if (System.IO.File.Exists(AUTH_RECORD_PATH))
+        {
+            // If it does exist, load it from disk and deserialize it.
+            using var authRecordStream = new FileStream(AUTH_RECORD_PATH, FileMode.Open, FileAccess.Read);
+            authRecord = AuthenticationRecord.Deserialize(authRecordStream);
+            options.AuthenticationRecord = authRecord;
+            credential = new InteractiveBrowserCredential(options);
+        }
+        else
+        {
+            // Otherwise, get one and serialize it to disk
+            credential = new InteractiveBrowserCredential(options);
+            authRecord = credential.Authenticate(new TokenRequestContext(config.Scopes));
+            using var authRecordStream = new FileStream(AUTH_RECORD_PATH, FileMode.Create, FileAccess.Write);
+            authRecord.Serialize(authRecordStream);
+        }
+
+        _client = new GraphServiceClient(credential);
     }
 
     public override async Task DeleteFilesAsync(string[] paths)
