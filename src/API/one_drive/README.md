@@ -22,3 +22,9 @@ There is a Makefile with several methods
     - `make clean`
     - Building the code makes several directories with the binary and the debug info. This removes them from the one_drive and types directories 
 
+# Authentication
+Upon a `make run` command, the OneDrive client will attempt to authenticate to OneDrive. It does this by opening the authentication link in the system default browser.
+Currently, it is impossible to authenticate if running in a CLI environment, as browsers require a GUI.
+
+Note that the OneDrive client will cache the token on a successful login. It is stored in `token.json`, somewhere in the `bin` folder that is generated
+upon compilation. Delete the token file to force a reauthorization.
