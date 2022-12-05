@@ -282,7 +282,7 @@ json_t *get_file(int drive_index, char *path)
 	if (file == NULL)
 	{
 		fuse_log_error("Could not find file %s\n", path);
-		dump_drive(&Drives[0]);
+		//dump_drive(&Drives[0]);
 		return NULL;
 	}
 	return file;
@@ -376,7 +376,7 @@ int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char *optional_
  //int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in, int out)
 int get_subdirectory_contents(json_t **list, int drive_index, char *path)
 {
-	fuse_log("Generating filelist for subdirectory %s\n", path);
+	//fuse_log("Generating filelist for subdirectory %s\n", path);
 	return listAsArray(list, &Drives[drive_index], path);
 }
 
@@ -530,6 +530,7 @@ int get_file_index(const char *path, int driveIndex)
 	//fuse_log("after cut: %s", cut_path);
 	for (size_t index = 0; index < Drives[driveIndex].num_files; index++)
 	{
+	
 		const char *fileName = getJsonFileName(json_array_get(Drives[driveIndex].FileList, index));
 		if (strcmp(cut_path, fileName) == 0)
 		{

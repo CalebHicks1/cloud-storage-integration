@@ -432,6 +432,9 @@ static int xmp_rename(const char *from, const char *to /*, unsigned int flags */
 	res = rename(from_cache_path, to_cache_path);
 	fuse_log("renamed - from %s to %s \n", from_cache_path, to_cache_path);
 	
+
+	
+	
 	/*	Fix to bug */
 	//Naming the file with 'tolocal' gives the file the whole path as the name, which 
 	//includes the name of a subdirectory. We need to have just the name of the file
@@ -461,6 +464,21 @@ static int xmp_rename(const char *from, const char *to /*, unsigned int flags */
 	}
 
 	addPathToDeleteLog(CacheDeleteLogName, from_filename);
+	//int fd = open(to_cache_path, O_CREAT | S_IRUSR | S_IWUSR);
+	struct stat foo;
+	time_t mtime;
+  	struct utimbuf new_times;
+
+    stat(to_cache_path, &foo);
+  mtime = foo.st_mtime; /* seconds since the epoch */
+
+  new_times.actime = time(NULL); /* keep atime unchanged */
+  new_times.modtime = time(NULL);    /* set mtime to current time */
+  utime(to_cache_path, &new_times);
+
+	/*if (fd != -1) {
+        close(fd);
+    }*/
 	delete_lock();
 	return res;
 }
@@ -526,7 +544,7 @@ int main(int argc, char *argv[])
 	char *AbsoluteCachePathCpy = calloc(strlen(AbsoluteCachePath) + 11, sizeof(char));
 	AbsoluteCachePathCpy = memcpy(AbsoluteCachePathCpy, AbsoluteCachePath, strlen(AbsoluteCachePath) * sizeof(char));
 
-	CacheDeleteLogName = strcat(AbsoluteCachePathCpy, ".delete.txt");
+	CacheDeleteLogName = strcat(AbsoluteCachePathCpy, ".delete");
 
 	char *AbsoluteCachePathCpy2 = calloc(strlen(AbsoluteCachePath) + 6, sizeof(char));
 	AbsoluteCachePathCpy2 = memcpy(AbsoluteCachePathCpy2, AbsoluteCachePath, strlen(AbsoluteCachePath) * sizeof(char));

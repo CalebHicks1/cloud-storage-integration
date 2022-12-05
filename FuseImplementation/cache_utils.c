@@ -23,12 +23,15 @@ void wait_for_lock(){
 }
 
 void delete_lock(){
-	FILE *fPtr;
+	
 	fuse_log("delete for locl - %s\n", AbsoluteLockPath);
-	if ((fPtr = fopen(AbsoluteLockPath, "r")) != NULL)
+		struct stat buffer;
+    int exist;
+	
+	if((exist = stat(AbsoluteLockPath, &buffer)) == 0)
 	{
 		remove(AbsoluteLockPath);
-		fclose(fPtr);
+
 	}
 	
 }
