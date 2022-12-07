@@ -271,6 +271,7 @@ json_t *get_file(int drive_index, char *path)
 {
 	// Check FileList
 	int file_index = get_file_index(path, drive_index);
+	//fuse_log("%d file index\n", file_index);
 	if (file_index > -1)
 	{
 		return json_array_get(Drives[drive_index].FileList, file_index);
@@ -281,7 +282,7 @@ json_t *get_file(int drive_index, char *path)
 	if (file == NULL)
 	{
 		fuse_log_error("Could not find file %s\n", path);
-		dump_drive(&Drives[0]);
+		//dump_drive(&Drives[0]);
 		return NULL;
 	}
 	return file;
@@ -375,7 +376,7 @@ int myGetFileList(char lines[][LINE_MAX_BUFFER_SIZE], char *cmd, char *optional_
  //int get_subdirectory_contents(json_t **list, int drive_index, char *path, int in, int out)
 int get_subdirectory_contents(json_t **list, int drive_index, char *path)
 {
-	fuse_log("Generating filelist for subdirectory %s\n", path);
+	//fuse_log("Generating filelist for subdirectory %s\n", path);
 	return listAsArray(list, &Drives[drive_index], path);
 }
 
@@ -450,22 +451,25 @@ int listAsArray(json_t **list, struct Drive_Object * drive, char *optional_path)
 /*****************************************************************************/
 
 /*****Helper functions ******************************************************/
+/* CHANGED*/
 int is_drive(const char *path)
 {
+	//fuse_log(path);
 	for (int i = 0; i < NUM_DRIVES; i++)
 	{
-		if (strcmp(Drives[i].dirname, path + 1) == 0)
+		if (strcmp("", path + 1) == 0)
 		{
+			//fuse_log("\n is drive \n");
 			return 0;
 		}
 	}
+	//fuse_log("\n not drive \n");
 	return -1;
 }
-
 /**
  * Gets drive PRECISELY corresponding to path
  */
-struct Drive_Object *get_drive(const char *path)
+/*struct Drive_Object *get_drive(const char *path)
 {
 	for (int i = 0; i < NUM_DRIVES; i++)
 	{
@@ -475,7 +479,11 @@ struct Drive_Object *get_drive(const char *path)
 		}
 	}
 	return NULL;
-}
+}*/
+
+
+
+
 
 /**
  * Gets index of drive that "path" would live in
@@ -483,39 +491,46 @@ struct Drive_Object *get_drive(const char *path)
  */
 int get_drive_index(const char *path)
 {
-
+ //fuse_log("%s - path\n", path);
 	for (int i = 0; i < NUM_DRIVES; i++)
 	{
 		if (strncmp(path + 1, Drives[i].dirname, strlen(Drives[i].dirname)) == 0)
 		{
 
+//fuse_log("found \n");
 			return i;
 		}
 	}
+	//fuse_log("fail \n");
 	return -1;
 }
 
 /**
+ * CHANGED
  * /<GoogleDrive, NFS, etc>/filename -> filename
  */
 char *parse_out_drive_name(char *path)
 {
-	char *ret = path + 1;
+	/*char *ret = path + 1;
 	while (*ret != '\0' && *ret != '/')
 	{
 		ret++;
-	}
-	return (++ret);
+	}*/
+	return (++path);
 }
 
 /**
+ * CHANGED
  * Gets the index of "path" in ROOT level of drive
  */
 int get_file_index(const char *path, int driveIndex)
 {
+	//fuse_log("Before cut: %s", path);
 	char *cut_path = parse_out_drive_name((char *)path);
+	//fuse_log("after cut: %s", cut_path);
 	for (size_t index = 0; index < Drives[driveIndex].num_files; index++)
 	{
+	
 		const char *fileName = getJsonFileName(json_array_get(Drives[driveIndex].FileList, index));
 		if (strcmp(cut_path, fileName) == 0)
 		{
