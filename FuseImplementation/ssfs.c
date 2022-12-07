@@ -57,7 +57,7 @@ struct Drive_Object Drives[NUM_DRIVES] = // NumDrives defined in Drive.h
 			0,																										// Num Files
 			0,																										// Num Sub directories
 			2,																									// Num execs
-			{"../src/API/google_drive/google_drive_client","../src/API/dropbox/drop_box", "", ""}, // execs
+			{"../src/API/google_drive/google_drive_client","../src/API/dropbox/drop_box", "../src/API/one_drive/bin/Debug/net6.0/publish/OneDrive", ""}, // execs
 			{"", "", "", ""},																// args
 			{-1, -1, -1, -1},																						// in_fds
 			{-1, -1, -1, -1},																						// out_fds
@@ -231,9 +231,9 @@ static int xmp_unlink(const char *path)
 	}
 
 	addPathToDeleteLog(CacheDeleteLogName, newDirName);
-
+Drive_delete((char *)path);
 	delete_lock();
-	Drive_delete((char *)path);
+	
 	return res;
 }
 
@@ -817,7 +817,17 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		if (cache_find_or_download(&cachePath, (char *)path) == 0)
 		{
 			int res = xmp_read(cachePath, buffer, size, offset, fi);
-		//	fuse_log("Result %d \n", res);
+			fuse_log("\n\nStat %s \n", cachePath);
+		struct stat foo;
+	time_t mtime;
+  	struct utimbuf new_times;
+
+    stat(cachePath, &foo);
+  mtime = foo.st_mtime; /* seconds since the epoch */
+
+  new_times.actime = time(NULL); /* keep atime unchanged */
+  new_times.modtime = time(NULL);    /* set mtime to current time */
+  utime(cachePath, &new_times);
 		delete_lock();
 			return res;
 		}
@@ -832,6 +842,8 @@ static int do_read(const char *path, char *buffer, size_t size, off_t offset, st
 		// There currently cannot be any files in home directory so we will implement this later
 		fuse_log_error("File does not exist\n");
 	}*/
+	
+
 
 	delete_lock();
 	return 0;
