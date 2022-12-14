@@ -15,7 +15,7 @@ James Gillespie <jamesgillespie@vt.edu>
 Quinn Nolan <qjnolan@vt.edu>
 
 ## About
-cloud-storage-integration is an application to provide syncing between cloud storage services and your local machine. Fuse is used to present files stored in the cloud to the user at a specified mount point. Files are stored locally on an as-needed basis, and synced between drives. There are three main components: the frontend, which encapsulates presenting files to the user and organizing them; the APIs, which interact with the APIs of the cloud storage services, and the daemon, which periodically updates the cloud devices with file changes. 
+cloud-storage-integration is an application to facilitate syncing between cloud storage services and your local machine. Fuse is used to present files stored in the cloud to the user at a specified mount point. Files are stored locally on an as-needed basis, and synced between drives. There are three main components: the frontend, which encapsulates presenting files to the user and organizing them; the APIs, which interact with the APIs of the cloud storage services, and the daemon, which periodically updates the cloud devices with file changes. 
 
 ## Requirements
 libfuse: We recommend cloning the libfuse respository and installing from there: <https://github.com/libfuse/libfuse.git>. Follow the instructions provided in their README. 
