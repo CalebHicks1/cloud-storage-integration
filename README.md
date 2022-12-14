@@ -53,9 +53,9 @@ This will provide a series of urls to navgiate to. On each page, you will be ask
 
 ## Running 
 
-Navigate into src/FuseImplementation, and run the executable titled fuse
+Navigate into src/FuseImplementation, and run
 
-    $ fuse -f <your mount point> 
+    $ ./fuse -f <your mount point> 
 
 ## Disclaimer
 
