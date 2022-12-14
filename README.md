@@ -18,6 +18,7 @@ Quinn Nolan <qjnolan@vt.edu>
 ### Requirements
 libfuse: We recommend cloning the libfuse respository and installing from there: <https://github.com/libfuse/libfuse.git>
 libjannson: The necessary files are provided in in a tar.gz file in src/FuseImplementation:
+
     $ tar -xvf jansson-2.13.tar.gz
     $ cd jansson-2.13
     $ ./configure
